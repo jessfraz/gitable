@@ -1,6 +1,6 @@
 # gitable
 
-[![Travis CI](https://travis-ci.org//home/jessie/.go/src/github.com/jessfraz/gitable.svg?branch=master)](https://travis-ci.org//home/jessie/.go/src/github.com/jessfraz/gitable)
+[![Travis CI](https://travis-ci.org/jessfraz/gitable.svg?branch=master)](https://travis-ci.org/jessfraz/gitable)
 
 Bot to update an airtable sheet with GitHub pull request or issue data.
 
