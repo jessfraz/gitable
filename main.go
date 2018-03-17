@@ -183,7 +183,7 @@ func main() {
 			logrus.Debugf("getting issue %s/%s#%d", parts[0], parts[1], id)
 			issue, _, err := ghClient.Issues.Get(ctx, parts[0], parts[1], id)
 			if err != nil {
-				logrus.Fatalf("getting issue %s/%s#%d failed: %v", parts[0], parts[1], id)
+				logrus.Fatalf("getting issue %s/%s#%d failed: %v", parts[0], parts[1], id, err)
 			}
 
 			// Iterate over the labels.
@@ -202,13 +202,19 @@ func main() {
 				"Title":   issue.GetTitle(),
 				"State":   issue.GetState(),
 				"Type":    issueType,
-				"Labels":  labels,
 				"URL":     issue.GetHTMLURL(),
 				"Updated": issue.GetUpdatedAt(),
 			}
+			// Do without labels.
 			logrus.Debugf("updating record %s for issue %s/%s#%d", record.ID, parts[0], parts[1], id)
 			if err := airtableClient.UpdateRecord(airtableTableName, record.ID, updatedFields, &record); err != nil {
 				logrus.Fatalf("updating record %s for issue %s/%s#%d failed: %v", record.ID, parts[0], parts[1], id, err)
+			}
+			// Try again with labels, since the user may not have pre-populated the label options.
+			// TODO: add a create multiple select when the airtable API supports it.
+			updatedFields["Labels"] = labels
+			if err := airtableClient.UpdateRecord(airtableTableName, record.ID, updatedFields, &record); err != nil {
+				logrus.Warnf("updating record with labels %s for issue %s/%s#%d failed: %v", record.ID, parts[0], parts[1], id, err)
 			}
 		}
 	}
