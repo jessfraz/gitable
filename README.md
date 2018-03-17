@@ -4,6 +4,16 @@
 
 Bot to update an airtable sheet with GitHub pull request or issue data.
 
+**NOTE:** Your airtable table must have the following fields: `Reference`,
+`Title`, `Type`, `Status`, `Labels`, `URL`, and `Updated`. The only data you
+need to initialize is the `Reference` which is in the format
+`{owner}/{repo}#{number}`.
+
+It should look like the following:
+
+![airtable.png](airtable.png)
+
+
 ## Installation
 
 #### Binaries
