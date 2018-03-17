@@ -175,13 +175,16 @@ func main() {
 		affiliation += ",organization_member"
 	}
 
-	// Get the current user for the GitHub token.
-	user, _, err := ghClient.Users.Get(ctx, "")
-	if err != nil {
-		logrus.Fatalf("getting current github user for token failed: %v", err)
+	// If we didn't get any orgs explicitly passed, use the current user.
+	if len(orgs) == 0 {
+		// Get the current user for the GitHub token.
+		user, _, err := ghClient.Users.Get(ctx, "")
+		if err != nil {
+			logrus.Fatalf("getting current github user for token failed: %v", err)
+		}
+		// Add the current user to orgs.
+		orgs = append(orgs, user.GetLogin())
 	}
-	// Add the current user to orgs.
-	orgs = append(orgs, user.GetLogin())
 
 	// Create our bot type.
 	bot := &bot{
