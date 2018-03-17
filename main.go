@@ -201,6 +201,7 @@ func main() {
 			updatedFields := map[string]interface{}{
 				"Title":    issue.GetTitle(),
 				"State":    issue.GetState(),
+				"Author":   issue.GetUser(),
 				"Type":     issueType,
 				"Comments": issue.GetComments(),
 				"URL":      issue.GetHTMLURL(),
@@ -229,6 +230,7 @@ type githubRecord struct {
 		Reference string
 		Title     string
 		State     string
+		Author    string
 		Type      string
 		Labels    []string
 		Comments  int
