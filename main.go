@@ -172,7 +172,7 @@ func main() {
 	// Affiliation must be set before we add the user to the "orgs".
 	affiliation := "owner"
 	if len(orgs) > 0 {
-		affiliation = "organization_member"
+		affiliation += ",organization_member"
 	}
 
 	// If we didn't get any orgs explicitly passed, use the current user.
@@ -396,10 +396,12 @@ func (bot *bot) getRepositories(ctx context.Context, page, perPage int, affiliat
 	}
 
 	for _, repo := range repos {
-		// logrus.Debugf("getting issues for repo %s...", repo.GetFullName())
-		ipage := 0
-		if err := bot.getIssues(ctx, ipage, perPage, repo.GetOwner().GetLogin(), repo.GetName()); err != nil {
-			return err
+		if in(orgs, repo.GetOwner().GetLogin()) {
+			// logrus.Debugf("getting issues for repo %s...", repo.GetFullName())
+			ipage := 0
+			if err := bot.getIssues(ctx, ipage, perPage, repo.GetOwner().GetLogin(), repo.GetName()); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -464,6 +466,15 @@ func parseReference(ref string) (string, string, int, error) {
 	}
 
 	return parts[0], parts[1], id, nil
+}
+
+func in(a stringSlice, s string) bool {
+	for _, b := range a {
+		if b == s {
+			return true
+		}
+	}
+	return false
 }
 
 func usageAndExit(message string, exitCode int) {
