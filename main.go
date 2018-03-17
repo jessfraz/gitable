@@ -199,11 +199,12 @@ func main() {
 
 			// Update the record fields.
 			updatedFields := map[string]interface{}{
-				"Title":   issue.GetTitle(),
-				"State":   issue.GetState(),
-				"Type":    issueType,
-				"URL":     issue.GetHTMLURL(),
-				"Updated": issue.GetUpdatedAt(),
+				"Title":    issue.GetTitle(),
+				"State":    issue.GetState(),
+				"Type":     issueType,
+				"Comments": issue.GetComments(),
+				"URL":      issue.GetHTMLURL(),
+				"Updated":  issue.GetUpdatedAt(),
 			}
 			// Do without labels.
 			logrus.Debugf("updating record %s for issue %s/%s#%d", record.ID, parts[0], parts[1], id)
@@ -229,6 +230,7 @@ type githubRecord struct {
 		State     string
 		Type      string
 		Labels    []string
+		Comments  int
 		URL       string
 		Updated   time.Time
 		Project   interface{}
