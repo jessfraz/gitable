@@ -6,7 +6,7 @@ Bot to automatically sync and update an airtable sheet with
 GitHub pull request and issue data.
 
 **NOTE:** Your airtable table must have the following fields: `Reference`,
-`Title`, `Type`, `Status`, `Author`, `Labels`, `Comments`, `URL`, `Updated`, and `Created`. 
+`Title`, `Type`, `Status`, `Author`, `Labels`, `Comments`, `URL`, `Updated`, `Created`, and `Completed`. 
 The only data you need to initialize **(if not running with `--autofill`)** 
 is the `Reference` which is in the format
 `{owner}/{repo}#{number}`.

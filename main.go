@@ -232,6 +232,7 @@ type Fields struct {
 	URL       string
 	Updated   time.Time
 	Created   time.Time
+	Completed time.Time
 	Project   interface{}
 }
 
@@ -336,6 +337,7 @@ func (bot *bot) applyRecordToTable(ctx context.Context, issue *github.Issue, key
 			URL:       issue.GetHTMLURL(),
 			Updated:   issue.GetUpdatedAt(),
 			Created:   issue.GetCreatedAt(),
+			Completed: issue.GetClosedAt(),
 		},
 	}
 
@@ -350,6 +352,7 @@ func (bot *bot) applyRecordToTable(ctx context.Context, issue *github.Issue, key
 		"URL":       record.Fields.URL,
 		"Updated":   record.Fields.Updated,
 		"Created":   record.Fields.Created,
+		"Completed": record.Fields.Completed,
 	}
 
 	if id != "" {
@@ -408,7 +411,7 @@ func (bot *bot) getRepositories(ctx context.Context, page, perPage int, affiliat
 
 func (bot *bot) getIssues(ctx context.Context, page, perPage int, owner, repo string) error {
 	opt := &github.IssueListByRepoOptions{
-		State: "open",
+		State: "all",
 		ListOptions: github.ListOptions{
 			Page:    page,
 			PerPage: perPage,
