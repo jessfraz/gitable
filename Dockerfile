@@ -7,7 +7,7 @@ ENV GOPATH /go
 RUN	apk add --no-cache \
 	ca-certificates
 
-COPY . /go/src/github.com/genuinetools/gitable
+COPY . /go/src/github.com/jessfraz/gitable
 
 RUN set -x \
 	&& apk add --no-cache --virtual .build-deps \
@@ -16,7 +16,7 @@ RUN set -x \
 		libc-dev \
 		libgcc \
 		make \
-	&& cd /go/src/github.com/genuinetools/gitable \
+	&& cd /go/src/github.com/jessfraz/gitable \
 	&& make static \
 	&& mv gitable /usr/bin/gitable \
 	&& apk del .build-deps \
