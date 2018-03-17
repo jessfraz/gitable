@@ -170,7 +170,7 @@ func main() {
 	}
 
 	// Affiliation must be set before we add the user to the "orgs".
-	affiliation := "owner"
+	affiliation := "owner,collaborator"
 	if len(orgs) > 0 {
 		affiliation += ",organization_member"
 	}
