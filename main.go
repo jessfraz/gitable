@@ -253,57 +253,42 @@ func (bot *bot) run(ctx context.Context, affiliation string) error {
 
 	// Iterate over the records.
 	for _, record := range ghRecords {
-		// Split the reference into repository and issue number.
-		parts := strings.SplitN(record.Fields.Reference, "#", 2)
-		if len(parts) < 2 {
-			return fmt.Errorf("could not parse reference name into repository and issue number for %s, got: %#v", record.Fields.Reference, parts)
-		}
-		repolong := parts[0]
-		i := parts[1]
-
-		// Parse the string id into an int.
-		id, err := strconv.Atoi(i)
+		// Parse the reference.
+		user, repo, id, err := parseReference(record.Fields.Reference)
 		if err != nil {
 			return err
 		}
 
-		// Split the repo name into owner and repo.
-		parts = strings.SplitN(repolong, "/", 2)
-		if len(parts) < 2 {
-			return fmt.Errorf("could not parse reference name into owner and repo for %s, got: %#v", repolong, parts)
-		}
-
 		// Get the github issue.
 		var issue *github.Issue
-		key := fmt.Sprintf("%s/%s#%d", parts[0], parts[1], id)
 
 		// Check if we already have it from autofill.
 		if autofill {
-			if i, ok := bot.issues[key]; ok {
-				logrus.Debugf("found github issue %s from autofill", key)
+			if i, ok := bot.issues[record.Fields.Reference]; ok {
+				logrus.Debugf("found github issue %s from autofill", record.Fields.Reference)
 				issue = i
 				// delete the key from the autofilled map
-				delete(bot.issues, key)
+				delete(bot.issues, record.Fields.Reference)
 			}
 		}
 
 		// If we don't already have the issue, then get it.
 		if issue == nil {
-			logrus.Debugf("getting issue %s", key)
-			issue, _, err = bot.ghClient.Issues.Get(ctx, parts[0], parts[1], id)
+			logrus.Debugf("getting issue %s", record.Fields.Reference)
+			issue, _, err = bot.ghClient.Issues.Get(ctx, user, repo, id)
 			if err != nil {
-				return fmt.Errorf("getting issue %s failed: %v", key, err)
+				return fmt.Errorf("getting issue %s failed: %v", record.Fields.Reference, err)
 			}
 		}
 
-		if err := bot.applyRecordToTable(issue, key, record.ID); err != nil {
+		if err := bot.applyRecordToTable(ctx, issue, record.Fields.Reference, record.ID); err != nil {
 			return err
 		}
 	}
 
 	// If we autofilled issues, loop over and create which ever ones remain.
 	for key, issue := range bot.issues {
-		if err := bot.applyRecordToTable(issue, key, ""); err != nil {
+		if err := bot.applyRecordToTable(ctx, issue, key, ""); err != nil {
 			return err
 		}
 	}
@@ -311,7 +296,13 @@ func (bot *bot) run(ctx context.Context, affiliation string) error {
 	return nil
 }
 
-func (bot *bot) applyRecordToTable(issue *github.Issue, key, id string) error {
+func (bot *bot) applyRecordToTable(ctx context.Context, issue *github.Issue, key, id string) error {
+	// Parse the reference.
+	user, repo, number, err := parseReference(key)
+	if err != nil {
+		return err
+	}
+
 	// Iterate over the labels.
 	labels := []string{}
 	for _, label := range issue.Labels {
@@ -321,6 +312,16 @@ func (bot *bot) applyRecordToTable(issue *github.Issue, key, id string) error {
 	issueType := "issue"
 	if issue.IsPullRequest() {
 		issueType = "pull request"
+		// If the status is closed, we should find out if the
+		// _actual_ pull request status is "merged".
+		merged, _, err := bot.ghClient.PullRequests.IsMerged(ctx, user, repo, number)
+		if err != nil {
+			return err
+		}
+		if merged {
+			mstr := "merged"
+			issue.State = &mstr
+		}
 	}
 
 	// Create our empty record struct.
@@ -433,6 +434,30 @@ func (bot *bot) getIssues(ctx context.Context, page, perPage int, owner, repo st
 
 	page = resp.NextPage
 	return bot.getIssues(ctx, page, perPage, owner, repo)
+}
+
+func parseReference(ref string) (string, string, int, error) {
+	// Split the reference into repository and issue number.
+	parts := strings.SplitN(ref, "#", 2)
+	if len(parts) < 2 {
+		return "", "", 0, fmt.Errorf("could not parse reference name into repository and issue number for %s, got: %#v", ref, parts)
+	}
+	repolong := parts[0]
+	i := parts[1]
+
+	// Parse the string id into an int.
+	id, err := strconv.Atoi(i)
+	if err != nil {
+		return "", "", 0, err
+	}
+
+	// Split the repo name into owner and repo.
+	parts = strings.SplitN(repolong, "/", 2)
+	if len(parts) < 2 {
+		return "", "", 0, fmt.Errorf("could not parse reference name into owner and repo for %s, got: %#v", repolong, parts)
+	}
+
+	return parts[0], parts[1], id, nil
 }
 
 func usageAndExit(message string, exitCode int) {
