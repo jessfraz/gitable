@@ -30,6 +30,19 @@ It should look like the following:
 $ go get github.com/jessfraz/gitable
 ```
 
+#### Running with Docker
+
+```console
+$ docker run --restart always -d \
+    -v /etc/localtime:/etc/localtime:ro \
+    --name gitable \
+    -e "GITHUB_TOKEN=59f6asdfasdfasdf0" \
+    -e "AIRTABLE_APIKEY=ksdfsdf7" \
+    -e "AIRTABLE_BASEID=appzxcvewrwtrewt4" \
+    -e "AIRTABLE_TABLE=Current Open GitHub Pull Request and Issues" \
+    r.j3ss.co/gitable --interval 1m
+```
+
 ## Usage
 
 ```console
@@ -50,6 +63,8 @@ $ go get github.com/jessfraz/gitable
         Airtable Base ID (or env var AIRTABLE_BASEID)
   -airtable-table string
         Airtable Table (or env var AIRTABLE_TABLE)
+  -autofill
+        autofill all pull requests and issues for a user [or orgs] to a table (defaults to current user unless --orgs is set)
   -d    run in debug mode
   -github-token string
         GitHub API token (or env var GITHUB_TOKEN)
@@ -57,6 +72,8 @@ $ go get github.com/jessfraz/gitable
         update interval (ex. 5ms, 10s, 1m, 3h) (default "1m")
   -once
         run once and exit, do not run as a daemon
+  -orgs value
+        organizations to include (this option only applies to --autofill)
   -v    print version and exit (shorthand)
   -version
         print version and exit

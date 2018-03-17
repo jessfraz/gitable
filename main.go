@@ -52,9 +52,11 @@ const (
 
 var (
 	interval string
+	autofill bool
 	once     bool
 
 	githubToken string
+	orgs        stringSlice
 
 	airtableAPIKey    string
 	airtableBaseID    string
@@ -64,12 +66,26 @@ var (
 	vrsn  bool
 )
 
+// stringSlice is a slice of strings
+type stringSlice []string
+
+// implement the flag interface for stringSlice
+func (s *stringSlice) String() string {
+	return fmt.Sprintf("%s", *s)
+}
+func (s *stringSlice) Set(value string) error {
+	*s = append(*s, value)
+	return nil
+}
+
 func init() {
 	// parse flags
 	flag.StringVar(&interval, "interval", "1m", "update interval (ex. 5ms, 10s, 1m, 3h)")
+	flag.BoolVar(&autofill, "autofill", false, "autofill all pull requests and issues for a user [or orgs] to a table (defaults to current user unless --orgs is set)")
 	flag.BoolVar(&once, "once", false, "run once and exit, do not run as a daemon")
 
 	flag.StringVar(&githubToken, "github-token", os.Getenv("GITHUB_TOKEN"), "GitHub API token (or env var GITHUB_TOKEN)")
+	flag.Var(&orgs, "orgs", "organizations to include (this option only applies to --autofill)")
 
 	flag.StringVar(&airtableAPIKey, "airtable-apikey", os.Getenv("AIRTABLE_APIKEY"), "Airtable API Key (or env var AIRTABLE_APIKEY)")
 	flag.StringVar(&airtableBaseID, "airtable-baseid", os.Getenv("AIRTABLE_BASEID"), "Airtable Base ID (or env var AIRTABLE_BASEID)")
@@ -152,9 +168,31 @@ func main() {
 		logrus.Fatal(err)
 	}
 
+	// Affiliation must be set before we add the user to the "orgs".
+	affiliation := "owner"
+	if len(orgs) > 0 {
+		affiliation += ",organization_member"
+	}
+
+	// Get the current user for the GitHub token.
+	user, _, err := ghClient.Users.Get(ctx, "")
+	if err != nil {
+		logrus.Fatalf("getting current github user for token failed: %v", err)
+	}
+	// Add the current user to orgs.
+	orgs = append(orgs, user.GetLogin())
+
+	// Create our bot type.
+	bot := &bot{
+		ghClient:       ghClient,
+		airtableClient: airtableClient,
+		// Initialize our map.
+		issues: map[string]*github.Issue{},
+	}
+
 	// If the user passed the once flag, just do the run once and exit.
 	if once {
-		if err := run(ctx, ghClient, airtableClient); err != nil {
+		if err := bot.run(ctx, affiliation); err != nil {
 			logrus.Fatal(err)
 		}
 		logrus.Infof("Updated airtable table %s for base %s", airtableTableName, airtableBaseID)
@@ -163,33 +201,52 @@ func main() {
 
 	logrus.Infof("Starting bot to update airtable table %s for base %s every %s", airtableTableName, airtableBaseID, interval)
 	for range ticker.C {
-		if err := run(ctx, ghClient, airtableClient); err != nil {
+		if err := bot.run(ctx, affiliation); err != nil {
 			logrus.Fatal(err)
 		}
 	}
 }
 
-// githubRecord holds the data for the airtable fields that define the github data.
-type githubRecord struct {
-	ID     string
-	Fields struct {
-		Reference string
-		Title     string
-		State     string
-		Author    string
-		Type      string
-		Labels    []string
-		Comments  int
-		URL       string
-		Updated   time.Time
-		Created   time.Time
-		Project   interface{}
-	}
+type bot struct {
+	ghClient       *github.Client
+	airtableClient *airtable.Client
+	issues         map[string]*github.Issue
 }
 
-func run(ctx context.Context, ghClient *github.Client, airtableClient *airtable.Client) error {
+// githubRecord holds the data for the airtable fields that define the github data.
+type githubRecord struct {
+	ID     string `json:"id,omitempty"`
+	Fields Fields `json:"fields,omitempty"`
+}
+
+// Fields defines the airtable fields for the data.
+type Fields struct {
+	Reference string
+	Title     string
+	State     string
+	Author    string
+	Type      string
+	Labels    []string
+	Comments  int
+	URL       string
+	Updated   time.Time
+	Created   time.Time
+	Project   interface{}
+}
+
+func (bot *bot) run(ctx context.Context, affiliation string) error {
+	// if we are in autofill mode, get our repositories
+	if autofill {
+		page := 1
+		perPage := 100
+		logrus.Infof("getting repositories to be autofilled for org[s]: %s...", strings.Join(orgs, ", "))
+		if err := bot.getRepositories(ctx, page, perPage, affiliation); err != nil {
+			return err
+		}
+	}
+
 	ghRecords := []githubRecord{}
-	if err := airtableClient.ListRecords(airtableTableName, &ghRecords); err != nil {
+	if err := bot.airtableClient.ListRecords(airtableTableName, &ghRecords); err != nil {
 		return fmt.Errorf("listing records for table %s failed: %v", airtableTableName, err)
 	}
 
@@ -216,48 +273,165 @@ func run(ctx context.Context, ghClient *github.Client, airtableClient *airtable.
 		}
 
 		// Get the github issue.
-		logrus.Debugf("getting issue %s/%s#%d", parts[0], parts[1], id)
-		issue, _, err := ghClient.Issues.Get(ctx, parts[0], parts[1], id)
-		if err != nil {
-			return fmt.Errorf("getting issue %s/%s#%d failed: %v", parts[0], parts[1], id, err)
+		var issue *github.Issue
+		key := fmt.Sprintf("%s/%s#%d", parts[0], parts[1], id)
+
+		// Check if we already have it from autofill.
+		if autofill {
+			if i, ok := bot.issues[key]; ok {
+				logrus.Debugf("found github issue %s from autofill", key)
+				issue = i
+				// delete the key from the autofilled map
+				delete(bot.issues, key)
+			}
 		}
 
-		// Iterate over the labels.
-		labels := []string{}
-		for _, label := range issue.Labels {
-			labels = append(labels, label.GetName())
+		// If we don't already have the issue, then get it.
+		if issue == nil {
+			logrus.Debugf("getting issue %s", key)
+			issue, _, err = bot.ghClient.Issues.Get(ctx, parts[0], parts[1], id)
+			if err != nil {
+				return fmt.Errorf("getting issue %s failed: %v", key, err)
+			}
 		}
 
-		issueType := "issue"
-		if issue.IsPullRequest() {
-			issueType = "pull request"
+		if err := bot.applyRecordToTable(issue, key, record.ID); err != nil {
+			return err
 		}
+	}
 
-		// Update the record fields.
-		updatedFields := map[string]interface{}{
-			"Title":    issue.GetTitle(),
-			"State":    issue.GetState(),
-			"Author":   issue.GetUser().GetLogin(),
-			"Type":     issueType,
-			"Comments": issue.GetComments(),
-			"URL":      issue.GetHTMLURL(),
-			"Updated":  issue.GetUpdatedAt(),
-			"Created":  issue.GetCreatedAt(),
-		}
-		// Do without labels.
-		logrus.Debugf("updating record %s for issue %s/%s#%d", record.ID, parts[0], parts[1], id)
-		if err := airtableClient.UpdateRecord(airtableTableName, record.ID, updatedFields, &record); err != nil {
-			return fmt.Errorf("updating record %s for issue %s/%s#%d failed: %v", record.ID, parts[0], parts[1], id, err)
-		}
-		// Try again with labels, since the user may not have pre-populated the label options.
-		// TODO: add a create multiple select when the airtable API supports it.
-		updatedFields["Labels"] = labels
-		if err := airtableClient.UpdateRecord(airtableTableName, record.ID, updatedFields, &record); err != nil {
-			logrus.Warnf("updating record with labels %s for issue %s/%s#%d failed: %v", record.ID, parts[0], parts[1], id, err)
+	// If we autofilled issues, loop over and create which ever ones remain.
+	for key, issue := range bot.issues {
+		if err := bot.applyRecordToTable(issue, key, ""); err != nil {
+			return err
 		}
 	}
 
 	return nil
+}
+
+func (bot *bot) applyRecordToTable(issue *github.Issue, key, id string) error {
+	// Iterate over the labels.
+	labels := []string{}
+	for _, label := range issue.Labels {
+		labels = append(labels, label.GetName())
+	}
+
+	issueType := "issue"
+	if issue.IsPullRequest() {
+		issueType = "pull request"
+	}
+
+	// Create our empty record struct.
+	record := githubRecord{
+		Fields: Fields{
+			Reference: key,
+			Title:     issue.GetTitle(),
+			State:     issue.GetState(),
+			Author:    issue.GetUser().GetLogin(),
+			Type:      issueType,
+			Comments:  issue.GetComments(),
+			URL:       issue.GetHTMLURL(),
+			Updated:   issue.GetUpdatedAt(),
+			Created:   issue.GetCreatedAt(),
+		},
+	}
+
+	// Update the record fields.
+	fields := map[string]interface{}{
+		"Reference": record.Fields.Reference,
+		"Title":     record.Fields.Title,
+		"State":     record.Fields.State,
+		"Author":    record.Fields.Author,
+		"Type":      record.Fields.Type,
+		"Comments":  record.Fields.Comments,
+		"URL":       record.Fields.URL,
+		"Updated":   record.Fields.Updated,
+		"Created":   record.Fields.Created,
+	}
+
+	if id != "" {
+		// If we were passed a record ID, update the record instead of create.
+		logrus.Debugf("updating record %s for issue %s", id, key)
+		if err := bot.airtableClient.UpdateRecord(airtableTableName, id, fields, &record); err != nil {
+			return fmt.Errorf("updating record %s for issue %s failed: %v", id, key, err)
+		}
+	} else {
+		// Create the field.
+		logrus.Debugf("creating new record for issue %s", key)
+		if err := bot.airtableClient.CreateRecord(airtableTableName, &record); err != nil {
+			return err
+		}
+	}
+
+	// Try again with labels, since the user may not have pre-populated the label options.
+	// TODO: add a create multiple select when the airtable API supports it.
+	fields["Labels"] = labels
+	if err := bot.airtableClient.UpdateRecord(airtableTableName, record.ID, fields, &record); err != nil {
+		logrus.Warnf("updating record with labels %s for issue %s failed: %v", record.ID, key, err)
+	}
+
+	return nil
+}
+
+func (bot *bot) getRepositories(ctx context.Context, page, perPage int, affiliation string) error {
+	opt := &github.RepositoryListOptions{
+		Affiliation: affiliation,
+		ListOptions: github.ListOptions{
+			Page:    page,
+			PerPage: perPage,
+		},
+	}
+	repos, resp, err := bot.ghClient.Repositories.List(ctx, "", opt)
+	if err != nil {
+		return err
+	}
+
+	for _, repo := range repos {
+		// logrus.Debugf("getting issues for repo %s...", repo.GetFullName())
+		ipage := 0
+		if err := bot.getIssues(ctx, ipage, perPage, repo.GetOwner().GetLogin(), repo.GetName()); err != nil {
+			return err
+		}
+	}
+
+	// Return early if we are on the last page.
+	if page == resp.LastPage || resp.NextPage == 0 {
+		return nil
+	}
+
+	page = resp.NextPage
+	return bot.getRepositories(ctx, page, perPage, affiliation)
+}
+
+func (bot *bot) getIssues(ctx context.Context, page, perPage int, owner, repo string) error {
+	opt := &github.IssueListByRepoOptions{
+		State: "open",
+		ListOptions: github.ListOptions{
+			Page:    page,
+			PerPage: perPage,
+		},
+	}
+
+	issues, resp, err := bot.ghClient.Issues.ListByRepo(ctx, owner, repo, opt)
+	if err != nil {
+		return err
+	}
+
+	for _, issue := range issues {
+		key := fmt.Sprintf("%s/%s#%d", owner, repo, issue.GetNumber())
+
+		// logrus.Debugf("handling issue %s...", key)
+		bot.issues[key] = issue
+	}
+
+	// Return early if we are on the last page.
+	if page == resp.LastPage || resp.NextPage == 0 {
+		return nil
+	}
+
+	page = resp.NextPage
+	return bot.getIssues(ctx, page, perPage, owner, repo)
 }
 
 func usageAndExit(message string, exitCode int) {
