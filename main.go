@@ -152,74 +152,7 @@ func main() {
 
 	logrus.Infof("Starting bot to update airtable base %s every %s", airtableBaseID, interval)
 	for range ticker.C {
-		ghRecords := []githubRecord{}
-		if err := airtableClient.ListRecords(airtableTableName, &ghRecords); err != nil {
-			logrus.Fatalf("listing records for table %s failed: %v", airtableTableName, err)
-		}
-
-		// Iterate over the records.
-		for _, record := range ghRecords {
-			// Split the reference into repository and issue number.
-			parts := strings.SplitN(record.Fields.Reference, "#", 2)
-			if len(parts) < 2 {
-				logrus.Fatalf("could not parse reference name into repository and issue number for %s, got: %#v", record.Fields.Reference, parts)
-			}
-			repolong := parts[0]
-			i := parts[1]
-
-			// Parse the string id into an int.
-			id, err := strconv.Atoi(i)
-			if err != nil {
-				logrus.Fatal(err)
-			}
-
-			// Split the repo name into owner and repo.
-			parts = strings.SplitN(repolong, "/", 2)
-			if len(parts) < 2 {
-				logrus.Fatalf("could not parse reference name into owner and repo for %s, got: %#v", repolong, parts)
-			}
-
-			// Get the github issue.
-			logrus.Debugf("getting issue %s/%s#%d", parts[0], parts[1], id)
-			issue, _, err := ghClient.Issues.Get(ctx, parts[0], parts[1], id)
-			if err != nil {
-				logrus.Fatalf("getting issue %s/%s#%d failed: %v", parts[0], parts[1], id, err)
-			}
-
-			// Iterate over the labels.
-			labels := []string{}
-			for _, label := range issue.Labels {
-				labels = append(labels, label.GetName())
-			}
-
-			issueType := "issue"
-			if issue.IsPullRequest() {
-				issueType = "pull request"
-			}
-
-			// Update the record fields.
-			updatedFields := map[string]interface{}{
-				"Title":    issue.GetTitle(),
-				"State":    issue.GetState(),
-				"Author":   issue.GetUser(),
-				"Type":     issueType,
-				"Comments": issue.GetComments(),
-				"URL":      issue.GetHTMLURL(),
-				"Updated":  issue.GetUpdatedAt(),
-				"Created":  issue.GetCreatedAt(),
-			}
-			// Do without labels.
-			logrus.Debugf("updating record %s for issue %s/%s#%d", record.ID, parts[0], parts[1], id)
-			if err := airtableClient.UpdateRecord(airtableTableName, record.ID, updatedFields, &record); err != nil {
-				logrus.Fatalf("updating record %s for issue %s/%s#%d failed: %v", record.ID, parts[0], parts[1], id, err)
-			}
-			// Try again with labels, since the user may not have pre-populated the label options.
-			// TODO: add a create multiple select when the airtable API supports it.
-			updatedFields["Labels"] = labels
-			if err := airtableClient.UpdateRecord(airtableTableName, record.ID, updatedFields, &record); err != nil {
-				logrus.Warnf("updating record with labels %s for issue %s/%s#%d failed: %v", record.ID, parts[0], parts[1], id, err)
-			}
-		}
+		run(ctx, ghClient, airtableClient)
 	}
 }
 
@@ -239,6 +172,79 @@ type githubRecord struct {
 		Created   time.Time
 		Project   interface{}
 	}
+}
+
+func run(ctx context.Context, ghClient *github.Client, airtableClient *airtable.Client) error {
+	ghRecords := []githubRecord{}
+	if err := airtableClient.ListRecords(airtableTableName, &ghRecords); err != nil {
+		return fmt.Errorf("listing records for table %s failed: %v", airtableTableName, err)
+	}
+
+	// Iterate over the records.
+	for _, record := range ghRecords {
+		// Split the reference into repository and issue number.
+		parts := strings.SplitN(record.Fields.Reference, "#", 2)
+		if len(parts) < 2 {
+			return fmt.Errorf("could not parse reference name into repository and issue number for %s, got: %#v", record.Fields.Reference, parts)
+		}
+		repolong := parts[0]
+		i := parts[1]
+
+		// Parse the string id into an int.
+		id, err := strconv.Atoi(i)
+		if err != nil {
+			return err
+		}
+
+		// Split the repo name into owner and repo.
+		parts = strings.SplitN(repolong, "/", 2)
+		if len(parts) < 2 {
+			return fmt.Errorf("could not parse reference name into owner and repo for %s, got: %#v", repolong, parts)
+		}
+
+		// Get the github issue.
+		logrus.Debugf("getting issue %s/%s#%d", parts[0], parts[1], id)
+		issue, _, err := ghClient.Issues.Get(ctx, parts[0], parts[1], id)
+		if err != nil {
+			return fmt.Errorf("getting issue %s/%s#%d failed: %v", parts[0], parts[1], id, err)
+		}
+
+		// Iterate over the labels.
+		labels := []string{}
+		for _, label := range issue.Labels {
+			labels = append(labels, label.GetName())
+		}
+
+		issueType := "issue"
+		if issue.IsPullRequest() {
+			issueType = "pull request"
+		}
+
+		// Update the record fields.
+		updatedFields := map[string]interface{}{
+			"Title":    issue.GetTitle(),
+			"State":    issue.GetState(),
+			"Author":   issue.GetUser(),
+			"Type":     issueType,
+			"Comments": issue.GetComments(),
+			"URL":      issue.GetHTMLURL(),
+			"Updated":  issue.GetUpdatedAt(),
+			"Created":  issue.GetCreatedAt(),
+		}
+		// Do without labels.
+		logrus.Debugf("updating record %s for issue %s/%s#%d", record.ID, parts[0], parts[1], id)
+		if err := airtableClient.UpdateRecord(airtableTableName, record.ID, updatedFields, &record); err != nil {
+			return fmt.Errorf("updating record %s for issue %s/%s#%d failed: %v", record.ID, parts[0], parts[1], id, err)
+		}
+		// Try again with labels, since the user may not have pre-populated the label options.
+		// TODO: add a create multiple select when the airtable API supports it.
+		updatedFields["Labels"] = labels
+		if err := airtableClient.UpdateRecord(airtableTableName, record.ID, updatedFields, &record); err != nil {
+			logrus.Warnf("updating record with labels %s for issue %s/%s#%d failed: %v", record.ID, parts[0], parts[1], id, err)
+		}
+	}
+
+	return nil
 }
 
 func usageAndExit(message string, exitCode int) {
