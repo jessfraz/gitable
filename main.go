@@ -43,7 +43,8 @@ const (
  \__, |_|\__\__,_|_.__/|_|\___|
  |___/
 
- Bot to update an airtable sheet with GitHub pull request or issue data.
+ Bot to automatically sync and update an airtable sheet with
+ GitHub pull request and issue data.
  Version: %s
  Build: %s
 

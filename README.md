@@ -2,11 +2,13 @@
 
 [![Travis CI](https://travis-ci.org/jessfraz/gitable.svg?branch=master)](https://travis-ci.org/jessfraz/gitable)
 
-Bot to update an airtable sheet with GitHub pull request or issue data.
+Bot to automatically sync and update an airtable sheet with 
+GitHub pull request and issue data.
 
 **NOTE:** Your airtable table must have the following fields: `Reference`,
-`Title`, `Type`, `Status`, `Author`, `Labels`, `Comments`, `URL`, `Updated`, and `Created`. The only data you
-need to initialize is the `Reference` which is in the format
+`Title`, `Type`, `Status`, `Author`, `Labels`, `Comments`, `URL`, `Updated`, and `Created`. 
+The only data you need to initialize **(if not running with `--autofill`)** 
+is the `Reference` which is in the format
 `{owner}/{repo}#{number}`.
 
 It should look like the following:
@@ -53,7 +55,8 @@ $ docker run --restart always -d \
  \__, |_|\__\__,_|_.__/|_|\___|
  |___/
 
- Bot to update an airtable sheet with GitHub pull request or issue data.
+ Bot to automatically sync and update an airtable sheet with
+ GitHub pull request and issue data.
  Version: v0.1.0
  Build: 6a3dee6
 
