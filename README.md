@@ -55,6 +55,8 @@ $ go get github.com/jessfraz/gitable
         GitHub API token (or env var GITHUB_TOKEN)
   -interval string
         update interval (ex. 5ms, 10s, 1m, 3h) (default "1m")
+  -once
+        run once and exit, do not run as a daemon
   -v    print version and exit (shorthand)
   -version
         print version and exit

@@ -52,6 +52,7 @@ const (
 
 var (
 	interval string
+	once     bool
 
 	githubToken string
 
@@ -66,6 +67,7 @@ var (
 func init() {
 	// parse flags
 	flag.StringVar(&interval, "interval", "1m", "update interval (ex. 5ms, 10s, 1m, 3h)")
+	flag.BoolVar(&once, "once", false, "run once and exit, do not run as a daemon")
 
 	flag.StringVar(&githubToken, "github-token", os.Getenv("GITHUB_TOKEN"), "GitHub API token (or env var GITHUB_TOKEN)")
 
@@ -150,9 +152,20 @@ func main() {
 		logrus.Fatal(err)
 	}
 
-	logrus.Infof("Starting bot to update airtable base %s every %s", airtableBaseID, interval)
+	// If the user passed the once flag, just do the run once and exit.
+	if once {
+		if err := run(ctx, ghClient, airtableClient); err != nil {
+			logrus.Fatal(err)
+		}
+		logrus.Infof("Updated airtable table %s for base %s", airtableTableName, airtableBaseID)
+		os.Exit(0)
+	}
+
+	logrus.Infof("Starting bot to update airtable table %s for base %s every %s", airtableTableName, airtableBaseID, interval)
 	for range ticker.C {
-		run(ctx, ghClient, airtableClient)
+		if err := run(ctx, ghClient, airtableClient); err != nil {
+			logrus.Fatal(err)
+		}
 	}
 }
 
@@ -224,7 +237,7 @@ func run(ctx context.Context, ghClient *github.Client, airtableClient *airtable.
 		updatedFields := map[string]interface{}{
 			"Title":    issue.GetTitle(),
 			"State":    issue.GetState(),
-			"Author":   issue.GetUser(),
+			"Author":   issue.GetUser().GetLogin(),
 			"Type":     issueType,
 			"Comments": issue.GetComments(),
 			"URL":      issue.GetHTMLURL(),
