@@ -18,11 +18,11 @@ It should look like the following:
 
 #### Binaries
 
-- **darwin** [386](https://github.com//home/jessie/.go/src/github.com/jessfraz/gitable/releases/download/v0.0.0/gitable-darwin-386) / [amd64](https://github.com//home/jessie/.go/src/github.com/jessfraz/gitable/releases/download/v0.0.0/gitable-darwin-amd64)
-- **freebsd** [386](https://github.com//home/jessie/.go/src/github.com/jessfraz/gitable/releases/download/v0.0.0/gitable-freebsd-386) / [amd64](https://github.com//home/jessie/.go/src/github.com/jessfraz/gitable/releases/download/v0.0.0/gitable-freebsd-amd64)
-- **linux** [386](https://github.com//home/jessie/.go/src/github.com/jessfraz/gitable/releases/download/v0.0.0/gitable-linux-386) / [amd64](https://github.com//home/jessie/.go/src/github.com/jessfraz/gitable/releases/download/v0.0.0/gitable-linux-amd64) / [arm](https://github.com//home/jessie/.go/src/github.com/jessfraz/gitable/releases/download/v0.0.0/gitable-linux-arm) / [arm64](https://github.com//home/jessie/.go/src/github.com/jessfraz/gitable/releases/download/v0.0.0/gitable-linux-arm64)
-- **solaris** [amd64](https://github.com//home/jessie/.go/src/github.com/jessfraz/gitable/releases/download/v0.0.0/gitable-solaris-amd64)
-- **windows** [386](https://github.com//home/jessie/.go/src/github.com/jessfraz/gitable/releases/download/v0.0.0/gitable-windows-386) / [amd64](https://github.com//home/jessie/.go/src/github.com/jessfraz/gitable/releases/download/v0.0.0/gitable-windows-amd64)
+- **darwin** [386](https://github.com//home/jessie/.go/src/github.com/jessfraz/gitable/releases/download/v0.1.0/gitable-darwin-386) / [amd64](https://github.com//home/jessie/.go/src/github.com/jessfraz/gitable/releases/download/v0.1.0/gitable-darwin-amd64)
+- **freebsd** [386](https://github.com//home/jessie/.go/src/github.com/jessfraz/gitable/releases/download/v0.1.0/gitable-freebsd-386) / [amd64](https://github.com//home/jessie/.go/src/github.com/jessfraz/gitable/releases/download/v0.1.0/gitable-freebsd-amd64)
+- **linux** [386](https://github.com//home/jessie/.go/src/github.com/jessfraz/gitable/releases/download/v0.1.0/gitable-linux-386) / [amd64](https://github.com//home/jessie/.go/src/github.com/jessfraz/gitable/releases/download/v0.1.0/gitable-linux-amd64) / [arm](https://github.com//home/jessie/.go/src/github.com/jessfraz/gitable/releases/download/v0.1.0/gitable-linux-arm) / [arm64](https://github.com//home/jessie/.go/src/github.com/jessfraz/gitable/releases/download/v0.1.0/gitable-linux-arm64)
+- **solaris** [amd64](https://github.com//home/jessie/.go/src/github.com/jessfraz/gitable/releases/download/v0.1.0/gitable-solaris-amd64)
+- **windows** [386](https://github.com//home/jessie/.go/src/github.com/jessfraz/gitable/releases/download/v0.1.0/gitable-windows-386) / [amd64](https://github.com//home/jessie/.go/src/github.com/jessfraz/gitable/releases/download/v0.1.0/gitable-windows-amd64)
 
 #### Via Go
 
@@ -41,7 +41,7 @@ $ go get github.com/jessfraz/gitable
  |___/
 
  Bot to update an airtable sheet with GitHub pull request or issue data.
- Version: v0.0.0
+ Version: v0.1.0
  Build: 6a3dee6
 
   -airtable-apikey string
