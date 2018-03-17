@@ -183,20 +183,48 @@ func main() {
 			logrus.Debugf("getting issue %s/%s#%d", parts[0], parts[1], id)
 			issue, _, err := ghClient.Issues.Get(ctx, parts[0], parts[1], id)
 			if err != nil {
-				logrus.Fatal("getting issue %s/%s#%d failed: %v", parts[0], parts[1], id)
+				logrus.Fatalf("getting issue %s/%s#%d failed: %v", parts[0], parts[1], id)
 			}
 
-			fmt.Printf("issue: %v\n", issue)
+			// Iterate over the labels.
+			labels := []string{}
+			for _, label := range issue.Labels {
+				labels = append(labels, label.GetName())
+			}
+
+			issueType := "issue"
+			if issue.IsPullRequest() {
+				issueType = "pull request"
+			}
+
+			// Update the record fields.
+			updatedFields := map[string]interface{}{
+				"Title":   issue.GetTitle(),
+				"State":   issue.GetState(),
+				"Type":    issueType,
+				"Labels":  labels,
+				"URL":     issue.GetHTMLURL(),
+				"Updated": issue.GetUpdatedAt(),
+			}
+			logrus.Debugf("updating record %s for issue %s/%s#%d", record.ID, parts[0], parts[1], id)
+			if err := airtableClient.UpdateRecord(airtableTableName, record.ID, updatedFields, &record); err != nil {
+				logrus.Fatalf("updating record %s for issue %s/%s#%d failed: %v", record.ID, parts[0], parts[1], id, err)
+			}
 		}
 	}
 }
 
 // githubRecord holds the data for the airtable fields that define the github data.
 type githubRecord struct {
-	AirtableID string
-	Fields     struct {
+	ID     string
+	Fields struct {
 		Reference string
-		Link      string
+		Title     string
+		State     string
+		Type      string
+		Labels    []string
+		URL       string
+		Updated   time.Time
 		Project   interface{}
 	}
 }
