@@ -205,6 +205,7 @@ func main() {
 				"Comments": issue.GetComments(),
 				"URL":      issue.GetHTMLURL(),
 				"Updated":  issue.GetUpdatedAt(),
+				"Created":  issue.GetCreatedAt(),
 			}
 			// Do without labels.
 			logrus.Debugf("updating record %s for issue %s/%s#%d", record.ID, parts[0], parts[1], id)
@@ -233,6 +234,7 @@ type githubRecord struct {
 		Comments  int
 		URL       string
 		Updated   time.Time
+		Created   time.Time
 		Project   interface{}
 	}
 }
