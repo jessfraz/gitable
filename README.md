@@ -2,8 +2,10 @@
 
 [![Travis CI](https://travis-ci.org/jessfraz/gitable.svg?branch=master)](https://travis-ci.org/jessfraz/gitable)
 
-Bot to automatically sync and update an airtable sheet with 
+Bot to automatically sync and update an [Airtable][] sheet with 
 GitHub pull request and issue data.
+
+[Airtable]: https://airtable.com
 
 **NOTE:** Your airtable table must have the following fields: `Reference`,
 `Title`, `Type`, `Status`, `Author`, `Labels`, `Comments`, `URL`, `Updated`, `Created`, and `Completed`. 
