@@ -2,13 +2,15 @@
 
 [![Travis CI](https://travis-ci.org/jessfraz/gitable.svg?branch=master)](https://travis-ci.org/jessfraz/gitable)
 
-Bot to automatically sync and update an airtable sheet with 
+Bot to automatically sync and update an [Airtable][https://airtable.com] sheet with 
 GitHub pull request and issue data.
+
 
 **NOTE:** Your airtable table must have the following fields: `Reference` **(single line text)**,
 `Title` **(Single Line Text)** , `Type` **(single select)**, `State` **(single line text)**, `Author` **(single line text)**,
 `Labels` **(multiple select)**, `Comments` **(number)**, `URL` **(url)**, `Updated` **(date, include time)**, `Created` **(date, include  time)**,
  and `Completed` **(date, include time)**  `Project` **(Single Line Test)**.
+
 The only data you need to initialize **(if not running with `--autofill`)** 
 is the `Reference` which is in the format
 `{owner}/{repo}#{number}`.
@@ -87,5 +89,3 @@ $ docker run --restart always -d \
   -version
         print version and exit
 ```
-
-

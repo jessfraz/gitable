@@ -396,6 +396,7 @@ func (bot *bot) getRepositories(ctx context.Context, page, perPage int, affiliat
 	}
 
 	for _, repo := range repos {
+		// logrus.Debugf("checking if %s is in (%s)", repo.GetOwner().GetLogin(), strings.Join(orgs, " | "))
 		if in(orgs, repo.GetOwner().GetLogin()) {
 			// logrus.Debugf("getting issues for repo %s...", repo.GetFullName())
 			ipage := 0
