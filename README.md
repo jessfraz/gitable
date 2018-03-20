@@ -2,7 +2,7 @@
 
 [![Travis CI](https://travis-ci.org/jessfraz/gitable.svg?branch=master)](https://travis-ci.org/jessfraz/gitable)
 
-Bot to automatically sync and update an [Airtable][https://airtable.com] sheet with 
+Bot to automatically sync and update an [Airtable](https://airtable.com) sheet with 
 GitHub pull request and issue data.
 
 
