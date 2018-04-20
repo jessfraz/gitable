@@ -9,7 +9,7 @@ GitHub pull request and issue data.
 **NOTE:** Your airtable table must have the following fields: `Reference` **(single line text)**,
 `Title` **(Single Line Text)** , `Type` **(single select)**, `State` **(single line text)**, `Author` **(single line text)**,
 `Labels` **(multiple select)**, `Comments` **(number)**, `URL` **(url)**, `Updated` **(date, include time)**, `Created` **(date, include  time)**,
- and `Completed` **(date, include time)**  `Project` **(Single Line Test)**.
+ and `Completed` **(date, include time)**  `Project` **(Single Line Text)**.
 
 The only data you need to initialize **(if not running with `--autofill`)** 
 is the `Reference` which is in the format
@@ -28,11 +28,11 @@ It should look like the following:
 
 #### Binaries
 
-- **darwin** [386](https://github.com//home/jessie/.go/src/github.com/jessfraz/gitable/releases/download/v0.1.0/gitable-darwin-386) / [amd64](https://github.com//home/jessie/.go/src/github.com/jessfraz/gitable/releases/download/v0.1.0/gitable-darwin-amd64)
-- **freebsd** [386](https://github.com//home/jessie/.go/src/github.com/jessfraz/gitable/releases/download/v0.1.0/gitable-freebsd-386) / [amd64](https://github.com//home/jessie/.go/src/github.com/jessfraz/gitable/releases/download/v0.1.0/gitable-freebsd-amd64)
-- **linux** [386](https://github.com//home/jessie/.go/src/github.com/jessfraz/gitable/releases/download/v0.1.0/gitable-linux-386) / [amd64](https://github.com//home/jessie/.go/src/github.com/jessfraz/gitable/releases/download/v0.1.0/gitable-linux-amd64) / [arm](https://github.com//home/jessie/.go/src/github.com/jessfraz/gitable/releases/download/v0.1.0/gitable-linux-arm) / [arm64](https://github.com//home/jessie/.go/src/github.com/jessfraz/gitable/releases/download/v0.1.0/gitable-linux-arm64)
-- **solaris** [amd64](https://github.com//home/jessie/.go/src/github.com/jessfraz/gitable/releases/download/v0.1.0/gitable-solaris-amd64)
-- **windows** [386](https://github.com//home/jessie/.go/src/github.com/jessfraz/gitable/releases/download/v0.1.0/gitable-windows-386) / [amd64](https://github.com//home/jessie/.go/src/github.com/jessfraz/gitable/releases/download/v0.1.0/gitable-windows-amd64)
+- **darwin** [386](https://github.com/jessfraz/gitable/releases/download/v0.1.0/gitable-darwin-386) / [amd64](https://github.com/jessfraz/gitable/releases/download/v0.1.0/gitable-darwin-amd64)
+- **freebsd** [386](https://github.com/jessfraz/gitable/releases/download/v0.1.0/gitable-freebsd-386) / [amd64](https://github.com/jessfraz/gitable/releases/download/v0.1.0/gitable-freebsd-amd64)
+- **linux** [386](https://github.com/jessfraz/gitable/releases/download/v0.1.0/gitable-linux-386) / [amd64](https://github.com/jessfraz/gitable/releases/download/v0.1.0/gitable-linux-amd64) / [arm](https://github.com/jessfraz/gitable/releases/download/v0.1.0/gitable-linux-arm) / [arm64](https://github.com/jessfraz/gitable/releases/download/v0.1.0/gitable-linux-arm64)
+- **solaris** [amd64](https://github.com/jessfraz/gitable/releases/download/v0.1.0/gitable-solaris-amd64)
+- **windows** [386](https://github.com/jessfraz/gitable/releases/download/v0.1.0/gitable-windows-386) / [amd64](https://github.com/jessfraz/gitable/releases/download/v0.1.0/gitable-windows-amd64)
 
 #### Via Go
 
