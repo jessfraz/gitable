@@ -195,18 +195,19 @@ type githubRecord struct {
 
 // Fields defines the airtable fields for the data.
 type Fields struct {
-	Reference string
-	Title     string
-	State     string
-	Author    string
-	Type      string
-	Labels    []string
-	Comments  int
-	URL       string
-	Updated   time.Time
-	Created   time.Time
-	Completed time.Time
-	Project   interface{}
+	Reference  string
+	Title      string
+	State      string
+	Author     string
+	Type       string
+	Labels     []string
+	Comments   int
+	URL        string
+	Updated    time.Time
+	Created    time.Time
+	Completed  time.Time
+	Project    interface{}
+	Repository string
 }
 
 func (bot *bot) run(ctx context.Context, affiliation string) error {
@@ -315,31 +316,33 @@ func (bot *bot) applyRecordToTable(ctx context.Context, issue *github.Issue, key
 	record := githubRecord{
 		ID: id,
 		Fields: Fields{
-			Reference: key,
-			Title:     issue.GetTitle(),
-			State:     issue.GetState(),
-			Author:    issue.GetUser().GetLogin(),
-			Type:      issueType,
-			Comments:  issue.GetComments(),
-			URL:       issue.GetHTMLURL(),
-			Updated:   issue.GetUpdatedAt(),
-			Created:   issue.GetCreatedAt(),
-			Completed: issue.GetClosedAt(),
+			Reference:  key,
+			Title:      issue.GetTitle(),
+			State:      issue.GetState(),
+			Author:     issue.GetUser().GetLogin(),
+			Type:       issueType,
+			Comments:   issue.GetComments(),
+			URL:        issue.GetHTMLURL(),
+			Updated:    issue.GetUpdatedAt(),
+			Created:    issue.GetCreatedAt(),
+			Completed:  issue.GetClosedAt(),
+			Repository: repo,
 		},
 	}
 
 	// Update the record fields.
 	fields := map[string]interface{}{
-		"Reference": record.Fields.Reference,
-		"Title":     record.Fields.Title,
-		"State":     record.Fields.State,
-		"Author":    record.Fields.Author,
-		"Type":      record.Fields.Type,
-		"Comments":  record.Fields.Comments,
-		"URL":       record.Fields.URL,
-		"Updated":   record.Fields.Updated,
-		"Created":   record.Fields.Created,
-		"Completed": record.Fields.Completed,
+		"Reference":  record.Fields.Reference,
+		"Title":      record.Fields.Title,
+		"State":      record.Fields.State,
+		"Author":     record.Fields.Author,
+		"Type":       record.Fields.Type,
+		"Comments":   record.Fields.Comments,
+		"URL":        record.Fields.URL,
+		"Updated":    record.Fields.Updated,
+		"Created":    record.Fields.Created,
+		"Completed":  record.Fields.Completed,
+		"Repository": record.Fields.Repository,
 	}
 
 	if id != "" {
