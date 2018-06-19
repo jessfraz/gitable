@@ -248,9 +248,6 @@ func (bot *bot) run(ctx context.Context, affiliation string) error {
 		page := 1
 		perPage := 100
 		logrus.Info("getting repositories watched...")
-		if err != nil {
-			return err
-		}
 
 		if err := bot.getWatchedRepositories(ctx, page, perPage, since); err != nil {
 			return err
