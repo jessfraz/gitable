@@ -326,6 +326,7 @@ func (bot *bot) applyRecordToTable(ctx context.Context, issue *github.Issue, key
 			Updated:   issue.GetUpdatedAt(),
 			Created:   issue.GetCreatedAt(),
 			Completed: issue.GetClosedAt(),
+			Project:   repo,
 		},
 	}
 
@@ -341,6 +342,7 @@ func (bot *bot) applyRecordToTable(ctx context.Context, issue *github.Issue, key
 		"Updated":   record.Fields.Updated,
 		"Created":   record.Fields.Created,
 		"Completed": record.Fields.Completed,
+		"Project":   record.Fields.Project,
 	}
 
 	if id != "" {
