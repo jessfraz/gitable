@@ -231,6 +231,7 @@ func (bot *bot) run(ctx context.Context, affiliation string) error {
 		perPage := 100
 		logrus.Infof("getting repositories to be autofilled for org[s]: %s...", strings.Join(orgs, ", "))
 		if err := bot.getRepositories(ctx, page, perPage, affiliation); err != nil {
+			logrus.Errorf("Failed to get repos, %v\n", err)
 			return err
 		}
 	}
@@ -245,7 +246,8 @@ func (bot *bot) run(ctx context.Context, affiliation string) error {
 		// Parse the reference.
 		user, repo, id, err := parseReference(record.Fields.Reference)
 		if err != nil {
-			return err
+			logrus.Infof("Reference for %v failed:\n%v\n", record, err)
+			continue
 		}
 
 		// Get the github issue.
@@ -278,7 +280,8 @@ func (bot *bot) run(ctx context.Context, affiliation string) error {
 	// If we autofilled issues, loop over and create which ever ones remain.
 	for key, issue := range bot.issues {
 		if err := bot.applyRecordToTable(ctx, issue, key, ""); err != nil {
-			return err
+			logrus.Errorf("Failed to apply record to table for reference %s because %v\n", key, err)
+			continue
 		}
 	}
 
@@ -385,9 +388,10 @@ func (bot *bot) getRepositories(ctx context.Context, page, perPage int, affiliat
 	for _, repo := range repos {
 		// logrus.Debugf("checking if %s is in (%s)", repo.GetOwner().GetLogin(), strings.Join(orgs, " | "))
 		if in(orgs, repo.GetOwner().GetLogin()) {
-			// logrus.Debugf("getting issues for repo %s...", repo.GetFullName())
+			logrus.Debugf("getting issues for repo %s...", repo.GetFullName())
 			ipage := 0
 			if err := bot.getIssues(ctx, ipage, perPage, repo.GetOwner().GetLogin(), repo.GetName()); err != nil {
+				logrus.Debugf("Failed to get issues for repo %s - %v\n", repo.GetName(), err)
 				return err
 			}
 		}
