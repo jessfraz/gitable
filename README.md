@@ -6,9 +6,19 @@ Bot to automatically sync and update an [Airtable](https://airtable.com) sheet w
 GitHub pull request and issue data.
 
 
-**NOTE:** Your airtable table must have the following fields: `Reference` **(single line text)**,
-`Title` **(Single Line Text)** , `Type` **(single select)**, `State` **(single line text)**, `Author` **(single line text)**,
-`Labels` **(multiple select)**, `Comments` **(number)**, `URL` **(url)**, `Updated` **(date, include time)**, `Created` **(date, include  time)**, `Completed` **(date, include time)**, and `Project` **(Single Line Text)**.
+**NOTE:** Your airtable table must have the following fields: 
+- `Reference` **(single line text)**
+- `Title` **(Single Line Text)** 
+- `Type` **(single select)**
+- `State` **(single line text)**
+- `Author` **(single line text)**
+- `Labels` **(multiple select)**
+- `Comments` **(number)**
+- `URL` **(url)**
+- `Updated` **(date, include time)**
+- `Created` **(date, include  time)**
+- `Completed` **(date, include time)**
+- `Project` **(Single Line Text)**
 
 The only data you need to initialize **(if not running with `--autofill`)** 
 is the `Reference` which is in the format
