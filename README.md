@@ -7,18 +7,18 @@ GitHub pull request and issue data.
 
 
 **NOTE:** Your airtable table must have the following fields: 
-- `Reference` **(single line text)**
-- `Title` **(Single Line Text)** 
-- `Type` **(single select)**
-- `State` **(single line text)**
-- `Author` **(single line text)**
-- `Labels` **(multiple select)**
-- `Comments` **(number)**
-- `URL` **(url)**
-- `Updated` **(date, include time)**
-- `Created` **(date, include  time)**
-- `Completed` **(date, include time)**
-- `Project` **(Single Line Text)**
+- `reference` **(single line text)**
+- `title` **(single line text)** 
+- `type` **(single select)**
+- `state` **(single line text)**
+- `author` **(single line text)**
+- `labels` **(multiple select)**
+- `comments` **(number)**
+- `url` **(url)**
+- `updated` **(date, include time)**
+- `created` **(date, include  time)**
+- `completed` **(date, include time)**
+- `project` **(single line text)**
 
 The only data you need to initialize **(if not running with `--autofill`)** 
 is the `Reference` which is in the format
