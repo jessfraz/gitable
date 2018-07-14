@@ -27,11 +27,11 @@ It should look like the following:
 
 #### Binaries
 
-- **darwin** [386](https://github.com/jessfraz/gitable/releases/download/v0.1.0/gitable-darwin-386) / [amd64](https://github.com/jessfraz/gitable/releases/download/v0.1.0/gitable-darwin-amd64)
-- **freebsd** [386](https://github.com/jessfraz/gitable/releases/download/v0.1.0/gitable-freebsd-386) / [amd64](https://github.com/jessfraz/gitable/releases/download/v0.1.0/gitable-freebsd-amd64)
-- **linux** [386](https://github.com/jessfraz/gitable/releases/download/v0.1.0/gitable-linux-386) / [amd64](https://github.com/jessfraz/gitable/releases/download/v0.1.0/gitable-linux-amd64) / [arm](https://github.com/jessfraz/gitable/releases/download/v0.1.0/gitable-linux-arm) / [arm64](https://github.com/jessfraz/gitable/releases/download/v0.1.0/gitable-linux-arm64)
-- **solaris** [amd64](https://github.com/jessfraz/gitable/releases/download/v0.1.0/gitable-solaris-amd64)
-- **windows** [386](https://github.com/jessfraz/gitable/releases/download/v0.1.0/gitable-windows-386) / [amd64](https://github.com/jessfraz/gitable/releases/download/v0.1.0/gitable-windows-amd64)
+- **darwin** [386](https://github.com/jessfraz/gitable/releases/download/v0.1.1/gitable-darwin-386) / [amd64](https://github.com/jessfraz/gitable/releases/download/v0.1.1/gitable-darwin-amd64)
+- **freebsd** [386](https://github.com/jessfraz/gitable/releases/download/v0.1.1/gitable-freebsd-386) / [amd64](https://github.com/jessfraz/gitable/releases/download/v0.1.1/gitable-freebsd-amd64)
+- **linux** [386](https://github.com/jessfraz/gitable/releases/download/v0.1.1/gitable-linux-386) / [amd64](https://github.com/jessfraz/gitable/releases/download/v0.1.1/gitable-linux-amd64) / [arm](https://github.com/jessfraz/gitable/releases/download/v0.1.1/gitable-linux-arm) / [arm64](https://github.com/jessfraz/gitable/releases/download/v0.1.1/gitable-linux-arm64)
+- **solaris** [amd64](https://github.com/jessfraz/gitable/releases/download/v0.1.1/gitable-solaris-amd64)
+- **windows** [386](https://github.com/jessfraz/gitable/releases/download/v0.1.1/gitable-windows-386) / [amd64](https://github.com/jessfraz/gitable/releases/download/v0.1.1/gitable-windows-amd64)
 
 #### Via Go
 
@@ -64,7 +64,7 @@ $ docker run --restart always -d \
 
  Bot to automatically sync and update an airtable sheet with
  GitHub pull request and issue data.
- Version: v0.1.0
+ Version: v0.1.1
  Build: 6a3dee6
 
   -airtable-apikey string
