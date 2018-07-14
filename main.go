@@ -37,7 +37,7 @@ const (
 )
 
 var (
-	interval string
+	interval time.Duration
 	autofill bool
 	once     bool
 
@@ -66,7 +66,7 @@ func (s *stringSlice) Set(value string) error {
 
 func init() {
 	// parse flags
-	flag.StringVar(&interval, "interval", "1m", "update interval (ex. 5ms, 10s, 1m, 3h)")
+	flag.DurationVar(&interval, "interval", time.Minute, "update interval (ex. 5ms, 10s, 1m, 3h)")
 	flag.BoolVar(&autofill, "autofill", false, "autofill all pull requests and issues for a user [or orgs] to a table (defaults to current user unless --orgs is set)")
 	flag.BoolVar(&once, "once", false, "run once and exit, do not run as a daemon")
 
@@ -116,7 +116,7 @@ func init() {
 }
 
 func main() {
-	var ticker *time.Ticker
+	ticker := time.NewTicker(interval)
 
 	// On ^C, or SIGTERM handle exit.
 	c := make(chan os.Signal, 1)
@@ -131,13 +131,6 @@ func main() {
 	}()
 
 	ctx := context.Background()
-
-	// Parse the duration.
-	dur, err := time.ParseDuration(interval)
-	if err != nil {
-		logrus.Fatalf("parsing %s as duration failed: %v", interval, err)
-	}
-	ticker = time.NewTicker(dur)
 
 	// Create the http client.
 	ts := oauth2.StaticTokenSource(

@@ -65,6 +65,7 @@ $ docker run --restart always -d \
 ## Usage
 
 ```console
+$ gitable -h
        _ _        _     _
   __ _(_) |_ __ _| |__ | | ___
  / _` | | __/ _` | '_ \| |/ _ \
@@ -75,7 +76,7 @@ $ docker run --restart always -d \
  Bot to automatically sync and update an airtable sheet with
  GitHub pull request and issue data.
  Version: v0.1.1
- Build: 6a3dee6
+ Build: 56b7db7
 
   -airtable-apikey string
         Airtable API Key (or env var AIRTABLE_APIKEY)
@@ -88,8 +89,8 @@ $ docker run --restart always -d \
   -d    run in debug mode
   -github-token string
         GitHub API token (or env var GITHUB_TOKEN)
-  -interval string
-        update interval (ex. 5ms, 10s, 1m, 3h) (default "1m")
+  -interval duration
+        update interval (ex. 5ms, 10s, 1m, 3h) (default 1m0s)
   -once
         run once and exit, do not run as a daemon
   -orgs value
