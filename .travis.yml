@@ -18,39 +18,39 @@ jobs:
       deploy:
         provider: releases
         file:
-          - cross/gitable-linux-amd64.md5
-          - cross/gitable-windows-386.sha256
-          - cross/gitable-linux-arm
-          - cross/gitable-darwin-amd64.md5
           - cross/gitable-darwin-amd64
-          - cross/gitable-solaris-amd64.md5
-          - cross/gitable-linux-arm64.sha256
-          - cross/gitable-linux-arm.sha256
-          - cross/gitable-linux-386.sha256
+          - cross/gitable-darwin-amd64.md5
+          - cross/gitable-darwin-amd64.sha256
+          - cross/gitable-darwin-386
           - cross/gitable-darwin-386.md5
-          - cross/gitable-windows-386.md5
+          - cross/gitable-darwin-386.sha256
+          - cross/gitable-freebsd-amd64
           - cross/gitable-freebsd-amd64.md5
-          - cross/gitable-linux-arm64.md5
-          - cross/gitable-linux-arm64
           - cross/gitable-freebsd-amd64.sha256
-          - cross/gitable-freebsd-386.md5
-          - cross/gitable-linux-amd64.sha256
-          - cross/gitable-linux-386.md5
           - cross/gitable-freebsd-386
+          - cross/gitable-freebsd-386.md5
+          - cross/gitable-freebsd-386.sha256
+          - cross/gitable-linux-arm
+          - cross/gitable-linux-arm.md5
+          - cross/gitable-linux-arm.sha256
+          - cross/gitable-linux-arm64
+          - cross/gitable-linux-arm64.md5
+          - cross/gitable-linux-arm64.sha256
+          - cross/gitable-linux-amd64
+          - cross/gitable-linux-amd64.md5
+          - cross/gitable-linux-amd64.sha256
+          - cross/gitable-linux-386
+          - cross/gitable-linux-386.md5
+          - cross/gitable-linux-386.sha256
+          - cross/gitable-solaris-amd64
+          - cross/gitable-solaris-amd64.md5
           - cross/gitable-solaris-amd64.sha256
           - cross/gitable-windows-amd64
           - cross/gitable-windows-amd64.md5
           - cross/gitable-windows-amd64.sha256
-          - cross/gitable-linux-arm.md5
-          - cross/gitable-darwin-386.sha256
-          - cross/gitable-darwin-amd64.sha256
           - cross/gitable-windows-386
-          - cross/gitable-solaris-amd64
-          - cross/gitable-darwin-386
-          - cross/gitable-linux-386
-          - cross/gitable-freebsd-amd64
-          - cross/gitable-freebsd-386.sha256
-          - cross/gitable-linux-amd64
+          - cross/gitable-windows-386.md5
+          - cross/gitable-windows-386.sha256
         skip_cleanup: true
         on:
           tags: true
