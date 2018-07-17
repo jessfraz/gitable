@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"os"
@@ -14,26 +15,10 @@ import (
 	"golang.org/x/oauth2"
 
 	airtable "github.com/fabioberger/airtable-go"
+	"github.com/genuinetools/pkg/cli"
 	"github.com/google/go-github/github"
 	"github.com/jessfraz/gitable/version"
 	"github.com/sirupsen/logrus"
-)
-
-const (
-	// BANNER is what is printed for help/info output.
-	BANNER = `       _ _        _     _
-  __ _(_) |_ __ _| |__ | | ___
- / _` + "`" + ` | | __/ _` + "`" + ` | '_ \| |/ _ \
-| (_| | | || (_| | |_) | |  __/
- \__, |_|\__\__,_|_.__/|_|\___|
- |___/
-
- Bot to automatically sync and update an airtable sheet with
- GitHub pull request and issue data.
- Version: %s
- Build: %s
-
-`
 )
 
 var (
@@ -49,7 +34,6 @@ var (
 	airtableTableName string
 
 	debug bool
-	vrsn  bool
 )
 
 // stringSlice is a slice of strings
@@ -64,129 +48,137 @@ func (s *stringSlice) Set(value string) error {
 	return nil
 }
 
-func init() {
-	// parse flags
-	flag.DurationVar(&interval, "interval", time.Minute, "update interval (ex. 5ms, 10s, 1m, 3h)")
-	flag.BoolVar(&autofill, "autofill", false, "autofill all pull requests and issues for a user [or orgs] to a table (defaults to current user unless --orgs is set)")
-	flag.BoolVar(&once, "once", false, "run once and exit, do not run as a daemon")
+func main() {
+	// Create a new cli program.
+	p := cli.NewProgram()
+	p.Name = "gitable"
+	p.Description = "Bot to automatically sync and update an airtable sheet with GitHub pull request and issue data"
 
-	flag.StringVar(&githubToken, "github-token", os.Getenv("GITHUB_TOKEN"), "GitHub API token (or env var GITHUB_TOKEN)")
+	// Set the GitCommit and Version.
+	p.GitCommit = version.GITCOMMIT
+	p.Version = version.VERSION
+
+	// Setup the global flags.
+	p.FlagSet = flag.NewFlagSet("global", flag.ExitOnError)
+	p.FlagSet.DurationVar(&interval, "interval", time.Minute, "update interval (ex. 5ms, 10s, 1m, 3h)")
+	p.FlagSet.BoolVar(&autofill, "autofill", false, "autofill all pull requests and issues for a user [or orgs] to a table (defaults to current user unless --orgs is set)")
+	p.FlagSet.BoolVar(&once, "once", false, "run once and exit, do not run as a daemon")
+
+	p.FlagSet.StringVar(&githubToken, "github-token", os.Getenv("GITHUB_TOKEN"), "GitHub API token (or env var GITHUB_TOKEN)")
 	flag.Var(&orgs, "orgs", "organizations to include (this option only applies to --autofill)")
 
-	flag.StringVar(&airtableAPIKey, "airtable-apikey", os.Getenv("AIRTABLE_APIKEY"), "Airtable API Key (or env var AIRTABLE_APIKEY)")
-	flag.StringVar(&airtableBaseID, "airtable-baseid", os.Getenv("AIRTABLE_BASEID"), "Airtable Base ID (or env var AIRTABLE_BASEID)")
-	flag.StringVar(&airtableTableName, "airtable-table", os.Getenv("AIRTABLE_TABLE"), "Airtable Table (or env var AIRTABLE_TABLE)")
+	p.FlagSet.StringVar(&airtableAPIKey, "airtable-apikey", os.Getenv("AIRTABLE_APIKEY"), "Airtable API Key (or env var AIRTABLE_APIKEY)")
+	p.FlagSet.StringVar(&airtableBaseID, "airtable-baseid", os.Getenv("AIRTABLE_BASEID"), "Airtable Base ID (or env var AIRTABLE_BASEID)")
+	p.FlagSet.StringVar(&airtableTableName, "airtable-table", os.Getenv("AIRTABLE_TABLE"), "Airtable Table (or env var AIRTABLE_TABLE)")
 
-	flag.BoolVar(&vrsn, "version", false, "print version and exit")
-	flag.BoolVar(&vrsn, "v", false, "print version and exit (shorthand)")
-	flag.BoolVar(&debug, "d", false, "run in debug mode")
+	p.FlagSet.BoolVar(&debug, "debug", false, "enable debug logging")
+	p.FlagSet.BoolVar(&debug, "d", false, "enable debug logging")
 
-	flag.Usage = func() {
-		fmt.Fprint(os.Stderr, fmt.Sprintf(BANNER, version.VERSION, version.GITCOMMIT))
-		flag.PrintDefaults()
+	// Set the before function.
+	p.Before = func(ctx context.Context) error {
+		// Set the log level.
+		if debug {
+			logrus.SetLevel(logrus.DebugLevel)
+		}
+
+		if len(githubToken) < 1 {
+			return errors.New("GitHub token cannot be empty")
+		}
+
+		if len(airtableAPIKey) < 1 {
+			return errors.New("Airtable API Key cannot be empty")
+		}
+
+		if len(airtableBaseID) < 1 {
+			return errors.New("Airtable Base ID cannot be empty")
+		}
+
+		if len(airtableTableName) < 1 {
+			return errors.New("Airtable Table cannot be empty")
+		}
+
+		return nil
 	}
 
-	flag.Parse()
+	// Set the main program action.
+	p.Action = func(ctx context.Context, args []string) error {
+		ticker := time.NewTicker(interval)
 
-	if vrsn {
-		fmt.Printf("gitable version %s, build %s", version.VERSION, version.GITCOMMIT)
-		os.Exit(0)
-	}
+		// On ^C, or SIGTERM handle exit.
+		c := make(chan os.Signal, 1)
+		signal.Notify(c, os.Interrupt)
+		signal.Notify(c, syscall.SIGTERM)
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithCancel(ctx)
+		go func() {
+			for sig := range c {
+				logrus.Infof("Received %s, exiting.", sig.String())
+				ticker.Stop()
+				cancel()
+				os.Exit(0)
+			}
+		}()
 
-	// set log level
-	if debug {
-		logrus.SetLevel(logrus.DebugLevel)
-	}
+		// Create the http client.
+		ts := oauth2.StaticTokenSource(
+			&oauth2.Token{AccessToken: githubToken},
+		)
+		tc := oauth2.NewClient(ctx, ts)
 
-	if githubToken == "" {
-		usageAndExit("GitHub token cannot be empty.", 1)
-	}
+		// Create the github client.
+		ghClient := github.NewClient(tc)
 
-	if airtableAPIKey == "" {
-		usageAndExit("Airtable API Key cannot be empty.", 1)
-	}
+		// Create the airtable client.
+		airtableClient, err := airtable.New(airtableAPIKey, airtableBaseID)
+		if err != nil {
+			logrus.Fatal(err)
+		}
 
-	if airtableBaseID == "" {
-		usageAndExit("Airtable Base ID cannot be empty.", 1)
-	}
+		// Affiliation must be set before we add the user to the "orgs".
+		affiliation := "owner,collaborator"
+		if len(orgs) > 0 {
+			affiliation += ",organization_member"
+		}
 
-	if airtableTableName == "" {
-		usageAndExit("Airtable Table cannot be empty.", 1)
-	}
-}
+		// If we didn't get any orgs explicitly passed, use the current user.
+		if len(orgs) == 0 {
+			// Get the current user for the GitHub token.
+			user, _, err := ghClient.Users.Get(ctx, "")
+			if err != nil {
+				logrus.Fatalf("getting current github user for token failed: %v", err)
+			}
+			// Add the current user to orgs.
+			orgs = append(orgs, user.GetLogin())
+		}
 
-func main() {
-	ticker := time.NewTicker(interval)
+		// Create our bot type.
+		bot := &bot{
+			ghClient:       ghClient,
+			airtableClient: airtableClient,
+			// Initialize our map.
+			issues: map[string]*github.Issue{},
+		}
 
-	// On ^C, or SIGTERM handle exit.
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt)
-	signal.Notify(c, syscall.SIGTERM)
-	go func() {
-		for sig := range c {
-			ticker.Stop()
-			logrus.Infof("Received %s, exiting.", sig.String())
+		// If the user passed the once flag, just do the run once and exit.
+		if once {
+			if err := bot.run(ctx, affiliation); err != nil {
+				logrus.Fatal(err)
+			}
+			logrus.Infof("Updated airtable table %s for base %s", airtableTableName, airtableBaseID)
 			os.Exit(0)
 		}
-	}()
 
-	ctx := context.Background()
-
-	// Create the http client.
-	ts := oauth2.StaticTokenSource(
-		&oauth2.Token{AccessToken: githubToken},
-	)
-	tc := oauth2.NewClient(ctx, ts)
-
-	// Create the github client.
-	ghClient := github.NewClient(tc)
-
-	// Create the airtable client.
-	airtableClient, err := airtable.New(airtableAPIKey, airtableBaseID)
-	if err != nil {
-		logrus.Fatal(err)
-	}
-
-	// Affiliation must be set before we add the user to the "orgs".
-	affiliation := "owner,collaborator"
-	if len(orgs) > 0 {
-		affiliation += ",organization_member"
-	}
-
-	// If we didn't get any orgs explicitly passed, use the current user.
-	if len(orgs) == 0 {
-		// Get the current user for the GitHub token.
-		user, _, err := ghClient.Users.Get(ctx, "")
-		if err != nil {
-			logrus.Fatalf("getting current github user for token failed: %v", err)
+		logrus.Infof("Starting bot to update airtable table %s for base %s every %s", airtableTableName, airtableBaseID, interval)
+		for range ticker.C {
+			if err := bot.run(ctx, affiliation); err != nil {
+				logrus.Fatal(err)
+			}
 		}
-		// Add the current user to orgs.
-		orgs = append(orgs, user.GetLogin())
+		return nil
 	}
 
-	// Create our bot type.
-	bot := &bot{
-		ghClient:       ghClient,
-		airtableClient: airtableClient,
-		// Initialize our map.
-		issues: map[string]*github.Issue{},
-	}
-
-	// If the user passed the once flag, just do the run once and exit.
-	if once {
-		if err := bot.run(ctx, affiliation); err != nil {
-			logrus.Fatal(err)
-		}
-		logrus.Infof("Updated airtable table %s for base %s", airtableTableName, airtableBaseID)
-		os.Exit(0)
-	}
-
-	logrus.Infof("Starting bot to update airtable table %s for base %s every %s", airtableTableName, airtableBaseID, interval)
-	for range ticker.C {
-		if err := bot.run(ctx, affiliation); err != nil {
-			logrus.Fatal(err)
-		}
-	}
+	// Run our program.
+	p.Run()
 }
 
 type bot struct {
@@ -460,14 +452,4 @@ func in(a stringSlice, s string) bool {
 		}
 	}
 	return false
-}
-
-func usageAndExit(message string, exitCode int) {
-	if message != "" {
-		fmt.Fprintf(os.Stderr, message)
-		fmt.Fprintf(os.Stderr, "\n\n")
-	}
-	flag.Usage()
-	fmt.Fprintf(os.Stderr, "\n")
-	os.Exit(exitCode)
 }

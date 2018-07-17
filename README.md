@@ -45,38 +45,24 @@ $ docker run --restart always -d \
 
 ```console
 $ gitable -h
-       _ _        _     _
-  __ _(_) |_ __ _| |__ | | ___
- / _` | | __/ _` | '_ \| |/ _ \
-| (_| | | || (_| | |_) | |  __/
- \__, |_|\__\__,_|_.__/|_|\___|
- |___/
+gitable -  Bot to automatically sync and update an airtable sheet with GitHub pull request and issue data.
 
- Bot to automatically sync and update an airtable sheet with
- GitHub pull request and issue data.
- Version: v0.1.2
- Build: 56b7db7
+Usage: gitable <command>
 
-  -airtable-apikey string
-        Airtable API Key (or env var AIRTABLE_APIKEY)
-  -airtable-baseid string
-        Airtable Base ID (or env var AIRTABLE_BASEID)
-  -airtable-table string
-        Airtable Table (or env var AIRTABLE_TABLE)
-  -autofill
-        autofill all pull requests and issues for a user [or orgs] to a table (defaults to current user unless --orgs is set)
-  -d    run in debug mode
-  -github-token string
-        GitHub API token (or env var GITHUB_TOKEN)
-  -interval duration
-        update interval (ex. 5ms, 10s, 1m, 3h) (default 1m0s)
-  -once
-        run once and exit, do not run as a daemon
-  -orgs value
-        organizations to include (this option only applies to --autofill)
-  -v    print version and exit (shorthand)
-  -version
-        print version and exit
+Flags:
+
+  --airtable-apikey  Airtable API Key (or env var AIRTABLE_APIKEY) (default: <none>)
+  --airtable-baseid  Airtable Base ID (or env var AIRTABLE_BASEID) (default: <none>)
+  --airtable-table   Airtable Table (or env var AIRTABLE_TABLE) (default: <none>)
+  --autofill         autofill all pull requests and issues for a user [or orgs] to a table (defaults to current user unless --orgs is set) (default: false)
+  -d, --debug        enable debug logging (default: false)
+  --github-token     GitHub API token (or env var GITHUB_TOKEN)
+  --interval         update interval (ex. 5ms, 10s, 1m, 3h) (default: 1m0s)
+  --once             run once and exit, do not run as a daemon (default: false)
+
+Commands:
+
+  version  Show the version information.
 ```
 
 ## Airtable Setup 
