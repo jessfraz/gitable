@@ -59,6 +59,7 @@ Flags:
   --github-token     GitHub API token (or env var GITHUB_TOKEN)
   --interval         update interval (ex. 5ms, 10s, 1m, 3h) (default: 1m0s)
   --once             run once and exit, do not run as a daemon (default: false)
+  --orgs             organizations to include (this option only applies to --autofill) (default: [])
 
 Commands:
 
