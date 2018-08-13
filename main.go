@@ -65,7 +65,7 @@ func main() {
 	p.FlagSet.BoolVar(&once, "once", false, "run once and exit, do not run as a daemon")
 
 	p.FlagSet.StringVar(&githubToken, "github-token", os.Getenv("GITHUB_TOKEN"), "GitHub API token (or env var GITHUB_TOKEN)")
-	flag.Var(&orgs, "orgs", "organizations to include (this option only applies to --autofill)")
+	p.FlagSet.Var(&orgs, "orgs", "organizations to include (this option only applies to --autofill)")
 
 	p.FlagSet.StringVar(&airtableAPIKey, "airtable-apikey", os.Getenv("AIRTABLE_APIKEY"), "Airtable API Key (or env var AIRTABLE_APIKEY)")
 	p.FlagSet.StringVar(&airtableBaseID, "airtable-baseid", os.Getenv("AIRTABLE_BASEID"), "Airtable Base ID (or env var AIRTABLE_BASEID)")
