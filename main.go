@@ -337,7 +337,8 @@ func (bot *bot) applyRecordToTable(ctx context.Context, issue *github.Issue, key
 		// If we were passed a record ID, update the record instead of create.
 		logrus.Debugf("updating record %s for issue %s", id, key)
 		if err := bot.airtableClient.UpdateRecord(airtableTableName, id, fields, &record); err != nil {
-			return fmt.Errorf("updating record %s for issue %s failed: %v", id, key, err)
+			logrus.Warnf("updating record %s for issue %s failed: %v", id, key, err)
+			return nil
 		}
 	} else {
 		// Create the field.
