@@ -274,6 +274,9 @@ func (bot *bot) run(ctx context.Context, affiliation string) error {
 }
 
 func (bot *bot) applyRecordToTable(ctx context.Context, issue *github.Issue, key, id string) error {
+	// Trim surrounding quotes from ID string.
+	id = strings.Trim(id, "\"")
+
 	// Parse the reference.
 	user, repo, number, err := parseReference(key)
 	if err != nil {
@@ -303,6 +306,7 @@ func (bot *bot) applyRecordToTable(ctx context.Context, issue *github.Issue, key
 
 	// Create our empty record struct.
 	record := githubRecord{
+		ID: id,
 		Fields: Fields{
 			Reference: key,
 			Title:     issue.GetTitle(),
@@ -314,7 +318,6 @@ func (bot *bot) applyRecordToTable(ctx context.Context, issue *github.Issue, key
 			Updated:   issue.GetUpdatedAt(),
 			Created:   issue.GetCreatedAt(),
 			Completed: issue.GetClosedAt(),
-			Project:   repo,
 		},
 	}
 
@@ -330,7 +333,6 @@ func (bot *bot) applyRecordToTable(ctx context.Context, issue *github.Issue, key
 		"Updated":   record.Fields.Updated,
 		"Created":   record.Fields.Created,
 		"Completed": record.Fields.Completed,
-		"Project":   record.Fields.Project,
 	}
 
 	if id != "" {
