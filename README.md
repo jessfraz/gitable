@@ -6,14 +6,11 @@
 Bot to automatically sync and update an [Airtable](https://airtable.com) sheet with 
 GitHub pull request and issue data.
 
- * [Installation](README.md#installation)
-      * [Binaries](README.md#binaries)
-      * [Via Go](README.md#via-go)
-      * [Running with Docker](README.md#running-with-docker)
- * [Usage](README.md#usage)
- * [Airtable Setup](README.md#airtable-setup)
-      * [Using the API](README.md#using-the-api)
-      * [Format](README.md#format)
+**Table of Contents**
+
+<!-- toc -->
+
+<!-- tocstop -->
 
 ## Installation
 
