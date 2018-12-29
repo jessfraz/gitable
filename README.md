@@ -10,6 +10,15 @@ GitHub pull request and issue data.
 
 <!-- toc -->
 
+- [Installation](#installation)
+    + [Binaries](#binaries)
+    + [Via Go](#via-go)
+    + [Running with Docker](#running-with-docker)
+- [Usage](#usage)
+- [Airtable Setup](#airtable-setup)
+    + [Using the API](#using-the-api)
+    + [Format](#format)
+
 <!-- tocstop -->
 
 ## Installation
