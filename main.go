@@ -253,6 +253,13 @@ func (bot *bot) run(ctx context.Context, affiliation string) error {
 			logrus.Debugf("getting issue %s", record.Fields.Reference)
 			issue, _, err = bot.ghClient.Issues.Get(ctx, user, repo, id)
 			if err != nil {
+				if strings.Contains(err.Error(), "404 Not Found") {
+					// Delete it from the table, the repo has probably moved or something.
+					if err := bot.airtableClient.DestroyRecord(airtableTableName, record.ID); err != nil {
+						logrus.Warnf("destroying record %s failed: %v", record.ID, err)
+					}
+					continue
+				}
 				return fmt.Errorf("getting issue %s failed: %v", record.Fields.Reference, err)
 			}
 		}
