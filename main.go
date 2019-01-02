@@ -28,6 +28,8 @@ var (
 
 	githubToken string
 	orgs        stringSlice
+	watched     bool
+	watchSince  string
 
 	airtableAPIKey    string
 	airtableBaseID    string
@@ -71,6 +73,9 @@ func main() {
 	p.FlagSet.StringVar(&airtableBaseID, "airtable-baseid", os.Getenv("AIRTABLE_BASEID"), "Airtable Base ID (or env var AIRTABLE_BASEID)")
 	p.FlagSet.StringVar(&airtableTableName, "airtable-table", os.Getenv("AIRTABLE_TABLE"), "Airtable Table (or env var AIRTABLE_TABLE)")
 
+	p.FlagSet.BoolVar(&watched, "watched", false, "include the watched repositories")
+	p.FlagSet.StringVar(&watchSince, "watch-since", "2008-01-01T00:00:00Z", "defines the starting point of the issues been watched (format: 2006-01-02T15:04:05Z). defaults to no filter")
+
 	p.FlagSet.BoolVar(&debug, "debug", false, "enable debug logging")
 	p.FlagSet.BoolVar(&debug, "d", false, "enable debug logging")
 
@@ -82,19 +87,19 @@ func main() {
 		}
 
 		if len(githubToken) < 1 {
-			return errors.New("GitHub token cannot be empty")
+			return errors.New("gitHub token cannot be empty")
 		}
 
 		if len(airtableAPIKey) < 1 {
-			return errors.New("Airtable API Key cannot be empty")
+			return errors.New("airtable API Key cannot be empty")
 		}
 
 		if len(airtableBaseID) < 1 {
-			return errors.New("Airtable Base ID cannot be empty")
+			return errors.New("airtable Base ID cannot be empty")
 		}
 
 		if len(airtableTableName) < 1 {
-			return errors.New("Airtable Table cannot be empty")
+			return errors.New("airtable Table cannot be empty")
 		}
 
 		return nil
@@ -195,18 +200,19 @@ type githubRecord struct {
 
 // Fields defines the airtable fields for the data.
 type Fields struct {
-	Reference string
-	Title     string
-	State     string
-	Author    string
-	Type      string
-	Labels    []string
-	Comments  int
-	URL       string
-	Updated   time.Time
-	Created   time.Time
-	Completed time.Time
-	Project   interface{}
+	Reference  string
+	Title      string
+	State      string
+	Author     string
+	Type       string
+	Labels     []string
+	Comments   int
+	URL        string
+	Updated    time.Time
+	Created    time.Time
+	Completed  time.Time
+	Project    interface{}
+	Repository string
 }
 
 func (bot *bot) run(ctx context.Context, affiliation string) error {
@@ -226,6 +232,28 @@ func (bot *bot) run(ctx context.Context, affiliation string) error {
 		return fmt.Errorf("listing records for table %s failed: %v", airtableTableName, err)
 	}
 
+	since, err := time.Parse("2006-01-02T15:04:05Z", watchSince)
+	if err != nil {
+		return err
+	}
+
+	for _, record := range ghRecords {
+		if record.Fields.Updated.After(since) {
+			since = record.Fields.Updated
+		}
+	}
+
+	// if we are in watching mode, get your watched repositories
+	if watched {
+		page := 1
+		perPage := 100
+		logrus.Info("getting repositories watched...")
+
+		if err := bot.getWatchedRepositories(ctx, page, perPage, since); err != nil {
+			return err
+		}
+	}
+
 	// Iterate over the records.
 	for _, record := range ghRecords {
 		// Parse the reference.
@@ -238,8 +266,8 @@ func (bot *bot) run(ctx context.Context, affiliation string) error {
 		// Get the github issue.
 		var issue *github.Issue
 
-		// Check if we already have it from autofill.
-		if autofill {
+		// Check if we already have it from autofill or watched.
+		if autofill || watched {
 			if i, ok := bot.issues[record.Fields.Reference]; ok {
 				logrus.Debugf("found github issue %s from autofill", record.Fields.Reference)
 				issue = i
@@ -315,31 +343,33 @@ func (bot *bot) applyRecordToTable(ctx context.Context, issue *github.Issue, key
 	record := githubRecord{
 		ID: id,
 		Fields: Fields{
-			Reference: key,
-			Title:     issue.GetTitle(),
-			State:     issue.GetState(),
-			Author:    issue.GetUser().GetLogin(),
-			Type:      issueType,
-			Comments:  issue.GetComments(),
-			URL:       issue.GetHTMLURL(),
-			Updated:   issue.GetUpdatedAt(),
-			Created:   issue.GetCreatedAt(),
-			Completed: issue.GetClosedAt(),
+			Reference:  key,
+			Title:      issue.GetTitle(),
+			State:      issue.GetState(),
+			Author:     issue.GetUser().GetLogin(),
+			Type:       issueType,
+			Comments:   issue.GetComments(),
+			URL:        issue.GetHTMLURL(),
+			Updated:    issue.GetUpdatedAt(),
+			Created:    issue.GetCreatedAt(),
+			Completed:  issue.GetClosedAt(),
+			Repository: repo,
 		},
 	}
 
 	// Update the record fields.
 	fields := map[string]interface{}{
-		"Reference": record.Fields.Reference,
-		"Title":     record.Fields.Title,
-		"State":     record.Fields.State,
-		"Author":    record.Fields.Author,
-		"Type":      record.Fields.Type,
-		"Comments":  record.Fields.Comments,
-		"URL":       record.Fields.URL,
-		"Updated":   record.Fields.Updated,
-		"Created":   record.Fields.Created,
-		"Completed": record.Fields.Completed,
+		"Reference":  record.Fields.Reference,
+		"Title":      record.Fields.Title,
+		"State":      record.Fields.State,
+		"Author":     record.Fields.Author,
+		"Type":       record.Fields.Type,
+		"Comments":   record.Fields.Comments,
+		"URL":        record.Fields.URL,
+		"Updated":    record.Fields.Updated,
+		"Created":    record.Fields.Created,
+		"Completed":  record.Fields.Completed,
+		"Repository": record.Fields.Repository,
 	}
 
 	if id != "" {
@@ -385,7 +415,7 @@ func (bot *bot) getRepositories(ctx context.Context, page, perPage int, affiliat
 		if in(orgs, repo.GetOwner().GetLogin()) {
 			logrus.Debugf("getting issues for repo %s...", repo.GetFullName())
 			ipage := 0
-			if err := bot.getIssues(ctx, ipage, perPage, repo.GetOwner().GetLogin(), repo.GetName()); err != nil {
+			if err := bot.getIssues(ctx, ipage, perPage, repo.GetOwner().GetLogin(), repo.GetName(), repo.UpdatedAt.Time); err != nil {
 				logrus.Debugf("Failed to get issues for repo %s - %v\n", repo.GetName(), err)
 				return err
 			}
@@ -401,9 +431,39 @@ func (bot *bot) getRepositories(ctx context.Context, page, perPage int, affiliat
 	return bot.getRepositories(ctx, page, perPage, affiliation)
 }
 
-func (bot *bot) getIssues(ctx context.Context, page, perPage int, owner, repo string) error {
+func (bot *bot) getWatchedRepositories(ctx context.Context, page, perPage int, since time.Time) error {
+	opt := &github.ListOptions{
+		Page:    page,
+		PerPage: perPage,
+	}
+
+	repos, resp, err := bot.ghClient.Activity.ListWatched(ctx, "", opt)
+	if err != nil {
+		return err
+	}
+
+	for _, repo := range repos {
+		// logrus.Debugf("checking if %s is in (%s)", repo.GetOwner().GetLogin(), strings.Join(orgs, " | "))
+		// logrus.Debugf("getting issues for repo %s...", repo.GetFullName())
+		ipage := 0
+		if err := bot.getIssues(ctx, ipage, perPage, repo.GetOwner().GetLogin(), repo.GetName(), since); err != nil {
+			return err
+		}
+	}
+
+	// Return early if we are on the last page.
+	if page == resp.LastPage || resp.NextPage == 0 {
+		return nil
+	}
+
+	page = resp.NextPage
+	return bot.getWatchedRepositories(ctx, page, perPage, since)
+}
+
+func (bot *bot) getIssues(ctx context.Context, page, perPage int, owner, repo string, since time.Time) error {
 	opt := &github.IssueListByRepoOptions{
 		State: "all",
+		Since: since,
 		ListOptions: github.ListOptions{
 			Page:    page,
 			PerPage: perPage,
@@ -428,7 +488,7 @@ func (bot *bot) getIssues(ctx context.Context, page, perPage int, owner, repo st
 	}
 
 	page = resp.NextPage
-	return bot.getIssues(ctx, page, perPage, owner, repo)
+	return bot.getIssues(ctx, page, perPage, owner, repo, since)
 }
 
 func parseReference(ref string) (string, string, int, error) {

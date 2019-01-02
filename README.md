@@ -66,6 +66,8 @@ Flags:
   --interval         update interval (ex. 5ms, 10s, 1m, 3h) (default: 1m0s)
   --once             run once and exit, do not run as a daemon (default: false)
   --orgs             organizations to include (this option only applies to --autofill) (default: [])
+  --watch-since      defines the starting point of the issues been watched (format: 2006-01-02T15:04:05Z). defaults to no filter (default: 2008-01-01T00:00:00Z)
+  --watched          include the watched repositories (default: false)
 
 Commands:
 
@@ -93,7 +95,8 @@ Your airtable table must have the following fields:
 - `updated` **(date, include time)**
 - `created` **(date, include  time)**
 - `completed` **(date, include time)**
-- `project` **(single line text)**
+- `project` **(link to another sheet)**
+- `repository` **(single line text)**
 
 The only data you need to initialize **(if not running with `--autofill`)** 
 is the `Reference` which is in the format
