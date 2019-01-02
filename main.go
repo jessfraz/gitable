@@ -87,19 +87,19 @@ func main() {
 		}
 
 		if len(githubToken) < 1 {
-			return errors.New("GitHub token cannot be empty")
+			return errors.New("gitHub token cannot be empty")
 		}
 
 		if len(airtableAPIKey) < 1 {
-			return errors.New("Airtable API Key cannot be empty")
+			return errors.New("airtable API Key cannot be empty")
 		}
 
 		if len(airtableBaseID) < 1 {
-			return errors.New("Airtable Base ID cannot be empty")
+			return errors.New("airtable Base ID cannot be empty")
 		}
 
 		if len(airtableTableName) < 1 {
-			return errors.New("Airtable Table cannot be empty")
+			return errors.New("airtable Table cannot be empty")
 		}
 
 		return nil
