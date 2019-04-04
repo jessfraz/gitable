@@ -78,7 +78,7 @@ Commands:
 
 #### Using the API
 
-[Follow this guide](http://help.grow.com/connecting-your-data-internal-and-project-management/airtable/airtable-how-to-connect).
+[Follow this guide](https://help.grow.com/hc/en-us/articles/360015095834-Airtable).
 
 #### Format
 
