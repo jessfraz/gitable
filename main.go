@@ -203,6 +203,7 @@ type githubRecord struct {
 type Fields struct {
 	Reference  string
 	Title      string
+	Body       string
 	State      string
 	Author     string
 	Type       string
@@ -346,6 +347,7 @@ func (bot *bot) applyRecordToTable(ctx context.Context, issue *github.Issue, key
 		Fields: Fields{
 			Reference:  key,
 			Title:      issue.GetTitle(),
+			Body:       issue.GetBody(),
 			State:      issue.GetState(),
 			Author:     issue.GetUser().GetLogin(),
 			Type:       issueType,
@@ -363,6 +365,7 @@ func (bot *bot) applyRecordToTable(ctx context.Context, issue *github.Issue, key
 	fields := map[string]interface{}{
 		"Reference":  record.Fields.Reference,
 		"Title":      record.Fields.Title,
+		"Body":       record.Fields.Body,
 		"State":      record.Fields.State,
 		"Author":     record.Fields.Author,
 		"Type":       record.Fields.Type,

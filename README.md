@@ -86,6 +86,7 @@ Your airtable table must have the following fields:
 
 - `Reference` **(single line text)**
 - `Title` **(single line text)** 
+- `Body` **(single line text)**
 - `Type` **(single select)**
 - `State` **(single select)**
 - `Author` **(single line text)**
