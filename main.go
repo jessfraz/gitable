@@ -14,7 +14,7 @@ import (
 
 	"golang.org/x/oauth2"
 
-	airtable "github.com/fabioberger/airtable-go"
+	airtable "github.com/iwoj/airtable-go"
 	"github.com/genuinetools/pkg/cli"
 	"github.com/google/go-github/github"
 	"github.com/jessfraz/gitable/version"
@@ -196,6 +196,7 @@ type bot struct {
 type githubRecord struct {
 	ID     string `json:"id,omitempty"`
 	Fields Fields `json:"fields,omitempty"`
+	Typecast bool `json:"typecast,omitempty"`
 }
 
 // Fields defines the airtable fields for the data.
@@ -355,6 +356,7 @@ func (bot *bot) applyRecordToTable(ctx context.Context, issue *github.Issue, key
 			Completed:  issue.GetClosedAt(),
 			Repository: repo,
 		},
+		Typecast: true,
 	}
 
 	// Update the record fields.
@@ -375,7 +377,7 @@ func (bot *bot) applyRecordToTable(ctx context.Context, issue *github.Issue, key
 	if id != "" {
 		// If we were passed a record ID, update the record instead of create.
 		logrus.Debugf("updating record %s for issue %s", id, key)
-		if err := bot.airtableClient.UpdateRecord(airtableTableName, id, fields, &record); err != nil {
+		if err := bot.airtableClient.UpdateRecord(airtableTableName, id, fields, &record, true); err != nil {
 			logrus.Warnf("updating record %s for issue %s failed: %v", id, key, err)
 			return nil
 		}
@@ -390,7 +392,7 @@ func (bot *bot) applyRecordToTable(ctx context.Context, issue *github.Issue, key
 	// Try again with labels, since the user may not have pre-populated the label options.
 	// TODO: add a create multiple select when the airtable API supports it.
 	fields["Labels"] = labels
-	if err := bot.airtableClient.UpdateRecord(airtableTableName, record.ID, fields, &record); err != nil {
+	if err := bot.airtableClient.UpdateRecord(airtableTableName, record.ID, fields, &record, true); err != nil {
 		logrus.Warnf("updating record with labels %s for issue %s failed: %v", record.ID, key, err)
 	}
 
@@ -415,10 +417,18 @@ func (bot *bot) getRepositories(ctx context.Context, page, perPage int, affiliat
 		if in(orgs, repo.GetOwner().GetLogin()) {
 			logrus.Debugf("getting issues for repo %s...", repo.GetFullName())
 			ipage := 0
-			if err := bot.getIssues(ctx, ipage, perPage, repo.GetOwner().GetLogin(), repo.GetName(), repo.UpdatedAt.Time); err != nil {
+			since, err := time.Parse("2006-01-02T15:04:05Z", "1900-01-02T15:04:05Z")
+			if err != nil {
+				return err
+			}
+			if !autofill {
+				since = repo.UpdatedAt.Time
+			}
+			if err := bot.getIssues(ctx, ipage, perPage, repo.GetOwner().GetLogin(), repo.GetName(), since); err != nil {
 				logrus.Debugf("Failed to get issues for repo %s - %v\n", repo.GetName(), err)
 				return err
 			}
+			logrus.Debugf("Total issues: %d...", len(bot.issues))
 		}
 	}
 
