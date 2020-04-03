@@ -22,9 +22,10 @@ import (
 )
 
 var (
-	interval time.Duration
-	autofill bool
-	once     bool
+	interval    time.Duration
+	autofill    bool
+	verboseKeys bool
+	once        bool
 
 	githubToken string
 	orgs        stringSlice
@@ -64,6 +65,7 @@ func main() {
 	p.FlagSet = flag.NewFlagSet("global", flag.ExitOnError)
 	p.FlagSet.DurationVar(&interval, "interval", time.Minute, "update interval (ex. 5ms, 10s, 1m, 3h)")
 	p.FlagSet.BoolVar(&autofill, "autofill", false, "autofill all pull requests and issues for a user [or orgs] to a table (defaults to current user unless --orgs is set)")
+	p.FlagSet.BoolVar(&verboseKeys, "verbose-keys", false, "include title data in keys")
 	p.FlagSet.BoolVar(&once, "once", false, "run once and exit, do not run as a daemon")
 
 	p.FlagSet.StringVar(&githubToken, "github-token", os.Getenv("GITHUB_TOKEN"), "GitHub API token (or env var GITHUB_TOKEN)")
@@ -491,6 +493,10 @@ func (bot *bot) getIssues(ctx context.Context, page, perPage int, owner, repo st
 	for _, issue := range issues {
 		key := fmt.Sprintf("%s/%s#%d", owner, repo, issue.GetNumber())
 
+		if verboseKeys {
+			key = fmt.Sprintf("%s/%s#%d - %s", owner, repo, issue.GetNumber(), issue.GetTitle())
+		}
+
 		// logrus.Debugf("handling issue %s...", key)
 		bot.issues[key] = issue
 	}
@@ -507,6 +513,9 @@ func (bot *bot) getIssues(ctx context.Context, page, perPage int, owner, repo st
 func parseReference(ref string) (string, string, int, error) {
 	// Split the reference into repository and issue number.
 	parts := strings.SplitN(ref, "#", 2)
+	verboseParts := strings.SplitN(parts[1], " - ", 2)
+	parts[1] = verboseParts[0]
+
 	if len(parts) < 2 {
 		return "", "", 0, fmt.Errorf("could not parse reference name into repository and issue number for %s, got: %#v", ref, parts)
 	}
