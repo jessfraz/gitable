@@ -5,6 +5,8 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"net/http"
+	"net/url"
 	"os"
 	"os/signal"
 	"strconv"
@@ -17,6 +19,8 @@ import (
 	airtable "github.com/fabioberger/airtable-go"
 	"github.com/genuinetools/pkg/cli"
 	"github.com/google/go-github/github"
+	"github.com/gregjones/httpcache"
+	"github.com/gregjones/httpcache/diskcache"
 	"github.com/jessfraz/gitable/version"
 	"github.com/sirupsen/logrus"
 )
@@ -27,6 +31,7 @@ var (
 	once     bool
 
 	githubToken string
+	enturl      string
 	orgs        stringSlice
 	watched     bool
 	watchSince  string
@@ -68,6 +73,7 @@ func main() {
 
 	p.FlagSet.StringVar(&githubToken, "github-token", os.Getenv("GITHUB_TOKEN"), "GitHub API token (or env var GITHUB_TOKEN)")
 	p.FlagSet.Var(&orgs, "orgs", "organizations to include (this option only applies to --autofill)")
+	p.FlagSet.StringVar(&enturl, "github-url", "", "Connect to a specific GitHub server, provide full API URL (ex. https://github.example.com/api/v3/)")
 
 	p.FlagSet.StringVar(&airtableAPIKey, "airtable-apikey", os.Getenv("AIRTABLE_APIKEY"), "Airtable API Key (or env var AIRTABLE_APIKEY)")
 	p.FlagSet.StringVar(&airtableBaseID, "airtable-baseid", os.Getenv("AIRTABLE_BASEID"), "Airtable Base ID (or env var AIRTABLE_BASEID)")
@@ -110,13 +116,13 @@ func main() {
 		ticker := time.NewTicker(interval)
 
 		// On ^C, or SIGTERM handle exit.
-		c := make(chan os.Signal, 1)
-		signal.Notify(c, os.Interrupt)
-		signal.Notify(c, syscall.SIGTERM)
+		signals := make(chan os.Signal, 1)
+		signal.Notify(signals, os.Interrupt)
+		signal.Notify(signals, syscall.SIGTERM)
 		var cancel context.CancelFunc
 		ctx, cancel = context.WithCancel(ctx)
 		go func() {
-			for sig := range c {
+			for sig := range signals {
 				logrus.Infof("Received %s, exiting.", sig.String())
 				ticker.Stop()
 				cancel()
@@ -128,10 +134,27 @@ func main() {
 		ts := oauth2.StaticTokenSource(
 			&oauth2.Token{AccessToken: githubToken},
 		)
-		tc := oauth2.NewClient(ctx, ts)
+
+		// Create the HTTP cache.
+		cachePath := "/tmp/cache"
+		if err := os.MkdirAll(cachePath, 0777); err != nil {
+			logrus.Fatal(err)
+		}
+		cache := diskcache.New(cachePath)
+		tr := httpcache.NewTransport(cache)
+		c := &http.Client{Transport: tr}
+		ctx = context.WithValue(ctx, oauth2.HTTPClient, c)
 
 		// Create the github client.
-		ghClient := github.NewClient(tc)
+		tc := oauth2.NewClient(ctx, ts)
+		client := github.NewClient(tc)
+		if enturl != "" {
+			var err error
+			client.BaseURL, err = url.Parse(enturl + "/api/v3/")
+			if err != nil {
+				logrus.Fatal(err)
+			}
+		}
 
 		// Create the airtable client.
 		airtableClient, err := airtable.New(airtableAPIKey, airtableBaseID)
@@ -148,7 +171,7 @@ func main() {
 		// If we didn't get any orgs explicitly passed, use the current user.
 		if len(orgs) == 0 {
 			// Get the current user for the GitHub token.
-			user, _, err := ghClient.Users.Get(ctx, "")
+			user, _, err := client.Users.Get(ctx, "")
 			if err != nil {
 				logrus.Fatalf("getting current github user for token failed: %v", err)
 			}
@@ -158,7 +181,7 @@ func main() {
 
 		// Create our bot type.
 		bot := &bot{
-			ghClient:       ghClient,
+			ghClient:       client,
 			airtableClient: airtableClient,
 			// Initialize our map.
 			issues: map[string]*github.Issue{},
