@@ -28,13 +28,16 @@ github.com/peterbourgon/diskv
 # github.com/sirupsen/logrus v1.6.0
 ## explicit
 github.com/sirupsen/logrus
-# golang.org/x/net v0.0.0-20190108225652-1e06a53dbb7e
+# golang.org/x/net v0.0.0-20190620200207-3b0461eec859
+## explicit
 golang.org/x/net/context
 golang.org/x/net/context/ctxhttp
 # golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
 ## explicit
 golang.org/x/oauth2
 golang.org/x/oauth2/internal
+# golang.org/x/sync v0.0.0-20190423024810-112230192c58
+## explicit
 # golang.org/x/sys v0.0.0-20190422165155-953cdadca894
 golang.org/x/sys/unix
 # google.golang.org/appengine v1.4.0
