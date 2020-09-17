@@ -1,6 +1,7 @@
 # gitable
 
-[![Travis CI](https://img.shields.io/travis/jessfraz/gitable.svg?style=for-the-badge)](https://travis-ci.org/jessfraz/gitable)
+[![make-all](https://github.com/jessfraz/gitable/workflows/make%20all/badge.svg)](https://github.com/jessfraz/gitable/actions?query=workflow%3A%22make+all%22)
+[![make-image](https://github.com/jessfraz/gitable/workflows/make%20image/badge.svg)](https://github.com/jessfraz/gitable/actions?query=workflow%3A%22make+image%22)
 [![GoDoc](https://img.shields.io/badge/godoc-reference-5272B4.svg?style=for-the-badge)](https://godoc.org/github.com/jessfraz/gitable)
 
 Bot to automatically sync and update an [Airtable](https://airtable.com) sheet with 
