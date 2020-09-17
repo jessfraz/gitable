@@ -11,15 +11,14 @@ GitHub pull request and issue data.
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 **Table of Contents**
 
-- [gitable](#gitable)
-  - [Installation](#installation)
-      - [Binaries](#binaries)
-      - [Via Go](#via-go)
-      - [Running with Docker](#running-with-docker)
-  - [Usage](#usage)
-  - [Airtable Setup](#airtable-setup)
-      - [Using the API](#using-the-api)
-      - [Format](#format)
+- [Installation](#installation)
+    - [Binaries](#binaries)
+    - [Via Go](#via-go)
+    - [Running with Docker](#running-with-docker)
+- [Usage](#usage)
+- [Airtable Setup](#airtable-setup)
+    - [Using the API](#using-the-api)
+    - [Format](#format)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
