@@ -18,6 +18,7 @@ require (
 	github.com/konsorten/go-windows-terminal-sequences v1.0.3 // indirect
 	github.com/peterbourgon/diskv v2.0.1+incompatible // indirect
 	golang.org/x/net v0.7.0 // indirect
+	golang.org/x/sync v0.0.0-20190423024810-112230192c58
 	golang.org/x/sys v0.5.0 // indirect
 	google.golang.org/appengine v1.4.0 // indirect
 )
