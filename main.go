@@ -16,7 +16,7 @@ import (
 
 	"golang.org/x/oauth2"
 
-	airtable "github.com/fabioberger/airtable-go"
+	airtable "github.com/iwoj/airtable-go"
 	"github.com/genuinetools/pkg/cli"
 	"github.com/google/go-github/github"
 	"github.com/gregjones/httpcache"
@@ -26,9 +26,10 @@ import (
 )
 
 var (
-	interval time.Duration
-	autofill bool
-	once     bool
+	interval    time.Duration
+	autofill    bool
+	verboseKeys bool
+	once        bool
 
 	githubToken string
 	enturl      string
@@ -69,6 +70,7 @@ func main() {
 	p.FlagSet = flag.NewFlagSet("global", flag.ExitOnError)
 	p.FlagSet.DurationVar(&interval, "interval", time.Minute, "update interval (ex. 5ms, 10s, 1m, 3h)")
 	p.FlagSet.BoolVar(&autofill, "autofill", false, "autofill all pull requests and issues for a user [or orgs] to a table (defaults to current user unless --orgs is set)")
+	p.FlagSet.BoolVar(&verboseKeys, "verbose-keys", false, "include title data in keys")
 	p.FlagSet.BoolVar(&once, "once", false, "run once and exit, do not run as a daemon")
 
 	p.FlagSet.StringVar(&githubToken, "github-token", os.Getenv("GITHUB_TOKEN"), "GitHub API token (or env var GITHUB_TOKEN)")
@@ -219,12 +221,14 @@ type bot struct {
 type githubRecord struct {
 	ID     string `json:"id,omitempty"`
 	Fields Fields `json:"fields,omitempty"`
+	Typecast bool `json:"typecast,omitempty"`
 }
 
 // Fields defines the airtable fields for the data.
 type Fields struct {
 	Reference  string
 	Title      string
+	Body       string
 	State      string
 	Author     string
 	Type       string
@@ -368,6 +372,7 @@ func (bot *bot) applyRecordToTable(ctx context.Context, issue *github.Issue, key
 		Fields: Fields{
 			Reference:  key,
 			Title:      issue.GetTitle(),
+			Body:       issue.GetBody(),
 			State:      issue.GetState(),
 			Author:     issue.GetUser().GetLogin(),
 			Type:       issueType,
@@ -378,12 +383,14 @@ func (bot *bot) applyRecordToTable(ctx context.Context, issue *github.Issue, key
 			Completed:  issue.GetClosedAt(),
 			Repository: repo,
 		},
+		Typecast: true,
 	}
 
 	// Update the record fields.
 	fields := map[string]interface{}{
 		"Reference":  record.Fields.Reference,
 		"Title":      record.Fields.Title,
+		"Body":       record.Fields.Body,
 		"State":      record.Fields.State,
 		"Author":     record.Fields.Author,
 		"Type":       record.Fields.Type,
@@ -398,7 +405,7 @@ func (bot *bot) applyRecordToTable(ctx context.Context, issue *github.Issue, key
 	if id != "" {
 		// If we were passed a record ID, update the record instead of create.
 		logrus.Debugf("updating record %s for issue %s", id, key)
-		if err := bot.airtableClient.UpdateRecord(airtableTableName, id, fields, &record); err != nil {
+		if err := bot.airtableClient.UpdateRecord(airtableTableName, id, fields, &record, true); err != nil {
 			logrus.Warnf("updating record %s for issue %s failed: %v", id, key, err)
 			return nil
 		}
@@ -413,7 +420,7 @@ func (bot *bot) applyRecordToTable(ctx context.Context, issue *github.Issue, key
 	// Try again with labels, since the user may not have pre-populated the label options.
 	// TODO: add a create multiple select when the airtable API supports it.
 	fields["Labels"] = labels
-	if err := bot.airtableClient.UpdateRecord(airtableTableName, record.ID, fields, &record); err != nil {
+	if err := bot.airtableClient.UpdateRecord(airtableTableName, record.ID, fields, &record, true); err != nil {
 		logrus.Warnf("updating record with labels %s for issue %s failed: %v", record.ID, key, err)
 	}
 
@@ -438,10 +445,18 @@ func (bot *bot) getRepositories(ctx context.Context, page, perPage int, affiliat
 		if in(orgs, repo.GetOwner().GetLogin()) {
 			logrus.Debugf("getting issues for repo %s...", repo.GetFullName())
 			ipage := 0
-			if err := bot.getIssues(ctx, ipage, perPage, repo.GetOwner().GetLogin(), repo.GetName(), repo.UpdatedAt.Time); err != nil {
+			since, err := time.Parse("2006-01-02T15:04:05Z", "1900-01-02T15:04:05Z")
+			if err != nil {
+				return err
+			}
+			if !autofill {
+				since = repo.UpdatedAt.Time
+			}
+			if err := bot.getIssues(ctx, ipage, perPage, repo.GetOwner().GetLogin(), repo.GetName(), since); err != nil {
 				logrus.Debugf("Failed to get issues for repo %s - %v\n", repo.GetName(), err)
 				return err
 			}
+			logrus.Debugf("Total issues: %d...", len(bot.issues))
 		}
 	}
 
@@ -501,6 +516,10 @@ func (bot *bot) getIssues(ctx context.Context, page, perPage int, owner, repo st
 	for _, issue := range issues {
 		key := fmt.Sprintf("%s/%s#%d", owner, repo, issue.GetNumber())
 
+		if verboseKeys {
+			key = fmt.Sprintf("%s/%s#%d - %s", owner, repo, issue.GetNumber(), issue.GetTitle())
+		}
+
 		// logrus.Debugf("handling issue %s...", key)
 		bot.issues[key] = issue
 	}
@@ -517,6 +536,9 @@ func (bot *bot) getIssues(ctx context.Context, page, perPage int, owner, repo st
 func parseReference(ref string) (string, string, int, error) {
 	// Split the reference into repository and issue number.
 	parts := strings.SplitN(ref, "#", 2)
+	verboseParts := strings.SplitN(parts[1], " - ", 2)
+	parts[1] = verboseParts[0]
+
 	if len(parts) < 2 {
 		return "", "", 0, fmt.Errorf("could not parse reference name into repository and issue number for %s, got: %#v", ref, parts)
 	}
